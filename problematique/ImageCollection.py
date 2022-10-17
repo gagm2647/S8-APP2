@@ -24,7 +24,7 @@ class ImageCollection:
     """
 
     # liste de toutes les images
-    image_folder = r"." + os.sep + "baseDeDonneesImages"
+    image_folder = r"." + os.sep + "problematique/baseDeDonneesImages"
     _path = glob.glob(image_folder + os.sep + r"*.jpg")
     image_list = os.listdir(image_folder)
     # Filtrer pour juste garder les images
