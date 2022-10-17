@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 
 from TroisClasses import TroisClasses
 
-import helpers.analysis as an
-import helpers.classifiers as classifiers
+import analysis as an
+import classifiers as classifiers
 
 
 ##########################################

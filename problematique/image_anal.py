@@ -175,8 +175,9 @@ def denormalize_image(img, mu, sigma):
 #######################################
 #   Image normalization
 #######################################
-def normalize_image(img):
-    mu = np.mean(img)
+def correlate2d(data1, data2):
+
+    vectors = (data1, data2)
     sigma = np.std(img)
     n_img = (img - mu) / sigma
     return [n_img, mu, sigma]
@@ -225,12 +226,18 @@ def main():
     # Features
     if False:
         extract_entropy(images_mat, labels)
-    if True:
+    if False:
         extract_color_histogram(images_mat, labels)
     if False:
         extract_simple_stats(images_mat, labels)
     if False:
         extract_skimage_features(images_mat, labels, display=True)
+    
+
+    # Correlation
+    if True:
+        correlate2d(images, images)
+    
 
 
 ######################################
