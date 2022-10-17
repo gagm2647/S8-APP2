@@ -5,9 +5,9 @@ from statistics import covariance
 import cv2 as cv
 from cv2 import mean
 from matplotlib import image
+import skimage
 from skimage.filters.rank import entropy
-from skimage.morphology import disk
-import skimage.measure     
+from skimage.morphology import disk    
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -31,10 +31,11 @@ import pandas as pd
 def extract_entropy(images, labels, display=False): 
     entropy_list = [[], [], []] # Coast, Forest, Street
     for idx, img in enumerate(images):
-        entropy_img = entropy(img, disk(1))
+        
         entropy_nb = skimage.measure.shannon_entropy(img)
 
         if display:
+            entropy_img = entropy(img, disk(1))
             cv.imshow('img', img)
             cv.imshow('entropy_img', entropy_img)
             cv.waitKey()
@@ -53,13 +54,13 @@ def extract_entropy(images, labels, display=False):
 def view_entropy(entropy_list):
     # Entropy ça suce...
     print('ENTROPY ANALYSIS...')
-    print("COAST \n MEAN: ", np.log(np.sum(entropy_list[0])/len(entropy_list[0])), "\n STD: ", np.std(entropy_list[0]))
-    print("FOREST \n MEAN: ", np.log(np.sum(entropy_list[1])/len(entropy_list[1])), "\n STD: ", np.std(entropy_list[1]))
-    print("STREET \n MEAN: ", np.log(np.sum(entropy_list[2])/len(entropy_list[2])), "\n STD: ", np.std(entropy_list[2]))
+    print("COAST \n MEAN: ", np.sum(entropy_list[0])/len(entropy_list[0]), "\n STD: ", np.std(entropy_list[0]))
+    print("FOREST \n MEAN: ", np.sum(entropy_list[1])/len(entropy_list[1]), "\n STD: ", np.std(entropy_list[1]))
+    print("STREET \n MEAN: ", np.sum(entropy_list[2])/len(entropy_list[2]), "\n STD: ", np.std(entropy_list[2]))
 
-    plt.hist(np.log(entropy_list[0]), bins=40)
-    plt.hist(np.log(entropy_list[1]), bins=40)
-    plt.hist(np.log(entropy_list[2]), bins=40)
+    plt.hist(entropy_list[0], bins=40)
+    plt.hist(entropy_list[1], bins=40)
+    plt.hist(entropy_list[2], bins=40)
     labels = ["coast", "forest", "street"]
     plt.legend(labels)
 
@@ -120,6 +121,44 @@ def extract_simple_stats(images, labels):
     for idx, img in enumerate(images):
         print("awww")
 
+
+#######################################
+#   Skimage Feature Exploration
+#######################################
+def extract_skimage_features(images, labels, display=False):
+    for idx, img in enumerate(images):
+        
+        gray_img = skimage.color.rgb2gray(img)
+        # edge filter
+        canny_img = skimage.feature.canny(gray_img)
+        canny_img_sig3 = skimage.feature.canny(gray_img, sigma=2)
+
+        # corner SHI-TOMASI BAD
+        # corner_img = skimage.feature.corner_shi_tomasi(gray_img)
+        
+        # HOG
+        fd, hog_img = skimage.feature.hog(img, orientations=8, pixels_per_cell=(16, 16),
+                    cells_per_block=(1, 1), visualize=True, channel_axis=-1)
+
+        if display:
+            # display results
+            fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(8, 3))
+
+            ax[0].imshow(img)
+            ax[0].set_title('original image', fontsize=20)
+
+            ax[1].imshow(hog_img)
+            ax[1].set_title(r'Hog filter, $\sigma=1$', fontsize=20)
+
+            ax[2].imshow(canny_img, cmap='gray')
+            ax[2].set_title(r'Canny filter, $\sigma=1$', fontsize=20)
+
+            for a in ax:
+                a.axis('off')
+
+            fig.tight_layout()
+            plt.show()
+
 #######################################
 #   Image normalization
 #######################################
@@ -131,6 +170,17 @@ def normalize_image(img):
 
 def denormalize_image(img, mu, sigma):
     return (img * sigma) + mu
+
+
+#######################################
+#   Image normalization
+#######################################
+def normalize_image(img):
+    mu = np.mean(img)
+    sigma = np.std(img)
+    n_img = (img - mu) / sigma
+    return [n_img, mu, sigma]
+
 
 #######################################
 #   Image Loading
@@ -166,18 +216,21 @@ def main():
     dataset_short_path = "./problematique/test/"
     images, labels = load_images(dataset_short_path, normalize=normalized)
 
+    images_mat = []
     if normalized:
         images_mat = list(map(itemgetter(0), images))
     else:
         images_mat = images
    
     # Features
-    if True:
-        extract_entropy(images_mat, labels)
     if False:
+        extract_entropy(images_mat, labels)
+    if True:
         extract_color_histogram(images_mat, labels)
     if False:
         extract_simple_stats(images_mat, labels)
+    if False:
+        extract_skimage_features(images_mat, labels, display=True)
 
 
 ######################################
