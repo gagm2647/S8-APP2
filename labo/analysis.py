@@ -112,6 +112,11 @@ def viewEllipse(data, ax, scale=1, facecolor='none', edgecolor='red', **kwargs):
     ell_radius_x = np.sqrt(1 + pearson) #* scale_x
     ell_radius_y = np.sqrt(1 - pearson) #* scale_y
 
+    # avec vector propres
+    ell_radius_x = np.sqrt((largest_vector[0]*np.sqrt(largest_value))**2 + (largest_vector[1]*np.sqrt(largest_value))**2)
+    ell_radius_y = np.sqrt((smallest_vector[0]*np.sqrt(smallest_value))**2 + (smallest_vector[1]*np.sqrt(smallest_value))**2)
+    
+
     # angle of largest vector
     rad = np.arctan(largest_vector[1]/largest_vector[0])
     angle = np.degrees(rad) 
@@ -270,11 +275,11 @@ def creer_hist2D(data, title, nbin=15, plot=False):
 
     # TODO L2.E1.1 Faire du pseudocode et implémenter une segmentation en bins...
     # pas des bins de l'histogramme
-    deltax = 1
-    deltay = 1
+    deltax = (np.max(x) - np.min(x)) / nbin
+    deltay = (np.max(y) - np.min(y)) / nbin
 
     # TODO : remplacer les valeurs bidons par la bonne logique ici
-    hist, xedges, yedges = np.histogram2d([1, 1], [1, 1], bins=[1, 1])
+    hist, xedges, yedges = np.histogram2d(x, y, bins=[nbin, nbin])
     # normalise par la somme (somme de densité de prob = 1)
     histsum = np.sum(hist)
     hist = hist / histsum
@@ -299,7 +304,7 @@ def creer_hist2D(data, title, nbin=15, plot=False):
 
         ax.bar3d(xpos.ravel(), ypos.ravel(), 0, deltax * .9, deltay * .9, dz, color=rgba)
         # Fin "à commenter" si affichage non désiré
-
+    
     return hist, xedges, yedges
 
 

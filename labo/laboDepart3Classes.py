@@ -37,7 +37,7 @@ def main():
     an.view_classes(allDecorr, an.Extent(ptList=an.decorrelate(TroisClasses.extent.get_corners(), vectprop1)))
 
     # exemple d'une densité de probabilité arbitraire pour 1 classe
-    an.creer_hist2D(TroisClasses.C1, 'C1')
+    an.creer_hist2D(TroisClasses.C1, 'C1', plot=False)
 
     # génération de données aléatoires
     ndonnees = 5000
@@ -53,12 +53,22 @@ def main():
     if False: # TODO L2.E3
         # 1-PPV avec comme représentants de classes l'ensemble des points déjà classés
         #           full_ppv(n_neighbors, train_data, train_classes, datatest1, title, extent, datatest2=None, classestest2=None)
-        classifiers.full_ppv(1, TroisClasses.data, TroisClasses.class_labels, donneesTest, '1-PPV avec données orig comme représentants', TroisClasses.extent)
+        classifiers.full_ppv(1, TroisClasses.data, TroisClasses.class_labels, donneesTest, '1-PPV avec données orig comme représentants', TroisClasses.extent, TroisClasses.data, TroisClasses.class_labels)
 
         # 1-mean sur chacune des classes
         # suivi d'un 1-PPV avec ces nouveaux représentants de classes
         cluster_centers, cluster_labels = classifiers.full_kmean(1, allClasses, TroisClasses.class_labels, 'Représentants des 1-moy', TroisClasses.extent)
         classifiers.full_ppv(1, cluster_centers, cluster_labels, donneesTest, '1-PPV sur le 1-moy', TroisClasses.extent, TroisClasses.data, TroisClasses.class_labels)
+
+    if True: # TODO L2.E3
+        # 5-PPV avec comme représentants de classes l'ensemble des points déjà classés
+        #           full_ppv(n_neighbors, train_data, train_classes, datatest1, title, extent, datatest2=None, classestest2=None)
+        classifiers.full_ppv(5, TroisClasses.data, TroisClasses.class_labels, donneesTest, '5-PPV avec données orig comme représentants', TroisClasses.extent, TroisClasses.data, TroisClasses.class_labels)
+
+        # 1-mean sur chacune des classes
+        # suivi d'un 1-PPV avec ces nouveaux représentants de classes
+        cluster_centers, cluster_labels = classifiers.full_kmean(1, allClasses, TroisClasses.class_labels, 'Représentants des 1-moy', TroisClasses.extent)
+        classifiers.full_ppv(3, cluster_centers, cluster_labels, donneesTest, '3-PPV sur le 1-moy', TroisClasses.extent, TroisClasses.data, TroisClasses.class_labels)
 
     if False: # TODO L3.E2
         # nn puis visualisation des frontières

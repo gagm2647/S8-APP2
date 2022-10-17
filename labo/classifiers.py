@@ -87,17 +87,24 @@ def compute_prob_dens_gaussian(train_data, test_data1, test_data2):
     t2, v2 = test_data2.shape
     dens_prob1 = []
     dens_prob2 = []
-    # calcule la valeur de la densité de probabilité pour chaque point de test
+    r1 = []
+    r2 = []
+    # calcule la valeur de la vraisemblance densité de probabilité pour chaque point de test
     for i in range(x):  # itère sur toutes les classes
         # pour les points dans test_data1
-        # TODO L2.E2.3 Compléter le calcul ici
-        mahalanobis1 = np.array([1 for j in range(t1)])
+        # TODO L2.E2.3 Compléter le calcul ici malsdajdsa = (X1 - X2).T * E-1(X1 - X2)
+        temp1 = np.array([test_data1[j] - mean_list[i] for j in range(t1)])
+        mahalanobis1 = np.array([np.matmul(np.matmul(temp1[j], inv_cov_list[i]), temp1[j].T) for j in range(t1)])
         prob1 = 1 / np.sqrt(det_list[i] * (2 * np.pi) ** z) * np.exp(-mahalanobis1 / 2)
         dens_prob1.append(prob1)
         # pour les points dans test_data2
-        mahalanobis2 = np.array([1 for j in range(t2)])
+        temp2 = np.array([test_data2[j] - mean_list[i] for j in range(t2)])
+        mahalanobis2 = np.array([np.matmul(np.matmul(temp2[j], inv_cov_list[i]), temp2[j].T) for j in range(t2)])
         prob2 = 1 / np.sqrt(det_list[i] * (2 * np.pi) ** z) * np.exp(-mahalanobis2 / 2)
         dens_prob2.append(prob2)
+
+    
+    
 
     return np.array(dens_prob1).T, np.array(dens_prob2).T  # reshape pour que les lignes soient les calculs pour 1 point original
 
@@ -114,9 +121,12 @@ def ppv_classify(n_neighbors, train_data, classes, test1, test2=None):
     # metric est le type de distance entre les points. La liste est disponible ici:
     # https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.DistanceMetric.html#sklearn.neighbors.DistanceMetric
     # TODO L2.E3.1 Compléter la logique pour utiliser la librairie ici
-    kNN = knn(1, metric='minkowski')  # minkowski correspond à distance euclidienne lorsque le paramètre p = 2
+    kNN = knn(n_neighbors, metric='minkowski')  # minkowski correspond à distance euclidienne lorsque le paramètre p = 2
+    kNN.fit(train_data, classes)
     predictions_test1 = np.zeros(len(test1))  # classifie les données de test1
     predictions_test2 = np.zeros(len(test2)) if np.asarray(test2).any() else np.asarray([])  # classifie les données de test2 si présentes
+    predictions_test1 = kNN.predict(test1)
+    predictions_test2 = kNN.predict(test2)
     return predictions_test1, predictions_test2
 
 
