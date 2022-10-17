@@ -18,7 +18,8 @@ import pandas as pd
 #  - Entropy == BAD
 #  - Entropy per color == BAD
 #  - Entropy grayscale == BAD
-#  - Color histogram == Meh
+#  - Color histogram == Meh / TO DO plus fif  que normalized
+#  - Color histogram Normalized (cool) == Meh
 #  - Color histogram conversion (HSV, Lab, XYZ, CMYK, etc.) == TO DO
 #  - Color histogram localized == TO DO
 #  - Shape recognition == TO DO
@@ -52,13 +53,13 @@ def extract_entropy(images, labels, display=False):
 def view_entropy(entropy_list):
     # Entropy ça suce...
     print('ENTROPY ANALYSIS...')
-    print("COAST \n MEAN: ", np.sum(entropy_list[0])/len(entropy_list[0]), "\n STD: ", np.std(entropy_list[0]))
-    print("FOREST \n MEAN: ", np.sum(entropy_list[1])/len(entropy_list[1]), "\n STD: ", np.std(entropy_list[1]))
-    print("STREET \n MEAN: ", np.sum(entropy_list[2])/len(entropy_list[2]), "\n STD: ", np.std(entropy_list[2]))
+    print("COAST \n MEAN: ", np.log(np.sum(entropy_list[0])/len(entropy_list[0])), "\n STD: ", np.std(entropy_list[0]))
+    print("FOREST \n MEAN: ", np.log(np.sum(entropy_list[1])/len(entropy_list[1])), "\n STD: ", np.std(entropy_list[1]))
+    print("STREET \n MEAN: ", np.log(np.sum(entropy_list[2])/len(entropy_list[2])), "\n STD: ", np.std(entropy_list[2]))
 
-    plt.hist(entropy_list[0], bins=40)
-    plt.hist(entropy_list[1], bins=40)
-    plt.hist(entropy_list[2], bins=40)
+    plt.hist(np.log(entropy_list[0]), bins=40)
+    plt.hist(np.log(entropy_list[1]), bins=40)
+    plt.hist(np.log(entropy_list[2]), bins=40)
     labels = ["coast", "forest", "street"]
     plt.legend(labels)
 
@@ -143,7 +144,7 @@ def load_images(directory, normalize=False):
             if normalize:
                 images.append(normalize_image(img))
             else:
-                images.append()
+                images.append(img)
     
         # Labeling
         if contains(filename, 'coast'):
@@ -171,9 +172,9 @@ def main():
         images_mat = images
    
     # Features
-    if False:
-        extract_entropy(images_mat, labels)
     if True:
+        extract_entropy(images_mat, labels)
+    if False:
         extract_color_histogram(images_mat, labels)
     if False:
         extract_simple_stats(images_mat, labels)
