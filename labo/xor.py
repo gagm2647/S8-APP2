@@ -87,7 +87,8 @@ def main():
     # Create neural network
     # TODO Comparez la performance de l'apprentissage avec un nombre différents de couches et de neurones
     model = Sequential()
-    model.add(Dense(units=1, activation='sigmoid', input_shape=(2,)))
+    model.add(Dense(units=4, activation='sigmoid', input_shape=(2,))) # Layer 1
+    model.add(Dense(units=1, activation='sigmoid')) # Layer 1
     print(model.summary())
 
     # Define training parameters
@@ -96,7 +97,7 @@ def main():
     # model.compile(optimizer=SGD(learning_rate=0.9, momentum=0.9), loss='mse')
 
     # Perform training
-    model.fit(data, target, batch_size=len(data), epochs=1000, shuffle=True, verbose=1)
+    model.fit(data, target, batch_size=len(data), epochs=150, shuffle=True, verbose=1)
 
     an.plot_metrics(model)
 
