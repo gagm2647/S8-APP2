@@ -45,15 +45,15 @@ from keras.optimizers import SGD
 from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split as ttsplit
 
-import helpers.analysis as an
-import helpers.classifiers as classifiers
+import analysis as an
+import classifiers as classifiers
 
 
 def main():
     # Load iris data set from file
     # Attributes are: petal length, petal width, sepal length, sepal width
     # TODO: Analyze the input data
-    S = scipy.io.loadmat('iris.mat')
+    S = scipy.io.loadmat('./labo/iris.mat')
     data = np.array(S['data'], dtype=np.float32)
     target = np.array(S['target'], dtype=np.float32)
 
@@ -62,21 +62,23 @@ def main():
     C1 = data[np.where(target_decode == 0)]
     C2 = data[np.where(target_decode == 1)]
     C3 = data[np.where(target_decode == 2)]
-    an.calcModeleGaussien(C1, '\nClasse versicolor')
+    pouet, pouet, pouet, vectprop1 = an.calcModeleGaussien(C1, '\nClasse versicolor')
     an.calcModeleGaussien(C2, '\nClasse virginica')
     an.calcModeleGaussien(C3, '\nClasse setose')
 
+    allDecorr = an.decorrelate(data[:, [2,3]], vectprop1)
+    an.view_classes(allDecorr, an.Extent(xmin=0, xmax=3, ymin=0, ymax=8))
     # Show the 3D projection of the data
     # TODO L3.E3.1 Observez si différentes combinaisons de dimensions sont discriminantes
-    data3D = data[:, 1:4]
-    an.view3D(data3D, target_decode, 'dims 1 2 3')
-    data3D = data[:, [0,2,3]]
-    an.view3D(data3D, target_decode, 'dims 0 2 3')
+    #data3D = allDecorr[:, 1:4]
+    #an.view3D(data3D, target_decode, 'dims 1 2 3')
+    #data3D = allDecorr[:, [0,2,3]]
+    #n.view3D(data3D, target_decode, 'dims 0 2 3')
 
     # TODO : Apply any relevant transformation to the data
     # TODO L3.E3.1 Conservez les dimensions qui vous semblent appropriées et décorrélées-les au besoin
     # (e.g. filtering, normalization, dimensionality reduction)
-    data, minmax = an.scaleData(data)
+    data, minmax = an.scaleData(allDecorr)
 
     # TODO L3.E3.4
     training_data = data
@@ -87,7 +89,7 @@ def main():
     # Create neural network
     # TODO L3.E3.3  Tune the number and size of hidden layers
     model = Sequential()
-    model.add(Dense(units=50, activation='tanh',
+    model.add(Dense(units=2, activation='tanh',
                     input_shape=(data.shape[-1],)))
     model.add(Dense(units=target.shape[-1], activation='linear'))
     print(model.summary())

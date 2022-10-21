@@ -147,8 +147,8 @@ def view_classes(data, extent, border_coeffs=None):
     colorpoints = ['orange', 'purple', 'black']
     colorfeatures = ['red', 'green', 'blue']
 
-    for i in range(dims[0]):
-        tempdata = data[i]
+    for i in range(dims[1]):
+        tempdata = data[:,i]
         m, cov, valpr, vectprop = calcModeleGaussien(tempdata)
         ax1.scatter(tempdata[:, 0], tempdata[:, 1], s=5, c=colorpoints[i])
         ax1.scatter(m[0], m[1], c=colorfeatures[i])
@@ -338,8 +338,8 @@ def calcModeleGaussien(data, message=''):
     """
     # TODO L1.E2.2 Remplacer les valeurs bidons avec les fonctions appropriées ici
 
-    moyenne = np.round([np.mean(data[:,0]), np.mean(data[:,1])])
-    matr_cov = np.round(np.cov(data[:,0], data[:,1]))
+    moyenne = [np.mean(data[:,0]), np.mean(data[:,1])]
+    matr_cov = np.cov(data[:,0], data[:,1])
     val_propres, vect_propres = np.linalg.eigh(matr_cov)
     
     if message:
@@ -357,7 +357,7 @@ def decorrelate(data, basis):
     """
     dims = np.asarray(data).shape
     decorrelated = np.zeros(np.asarray(data).shape)
-    for i in range(dims[0]):
+    for i in range(dims[1]):
         # TODO L1.E2.5 Remplacer l'opération bidon par la bonne projection ici
         tempdata = np.matmul(basis, data[i].T)
         decorrelated[i] = tempdata.T

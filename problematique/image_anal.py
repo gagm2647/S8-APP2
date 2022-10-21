@@ -125,7 +125,7 @@ def extract_simple_stats(images, labels):
 #######################################
 #   Skimage Feature Exploration
 #######################################
-def extract_skimage_features(images, labels, display=False):
+def extract_skimage_features(images:np.array, labels:np.array, display:bool=False):
     for idx, img in enumerate(images):
         
         gray_img = skimage.color.rgb2gray(img)
@@ -134,7 +134,7 @@ def extract_skimage_features(images, labels, display=False):
         canny_img_sig3 = skimage.feature.canny(gray_img, sigma=2)
 
         # corner SHI-TOMASI BAD
-        # corner_img = skimage.feature.corner_shi_tomasi(gray_img)
+        # corner_img = skimage.feature.corner_shi_tomasi(gray_img) SHIT
         
         # HOG
         fd, hog_img = skimage.feature.hog(img, orientations=8, pixels_per_cell=(16, 16),
@@ -159,6 +159,57 @@ def extract_skimage_features(images, labels, display=False):
             fig.tight_layout()
             plt.show()
 
+def extract_high_freq_entropy(images:np.array, labels:np.array, sigma:int=1, display:bool=False):
+    high_freq_entropy_values = np.zeros(len(labels))
+    for idx, img in enumerate(images):
+        # edge filter at sigma #1
+        gray_img = skimage.color.rgb2gray(img)
+        canny_img = skimage.feature.canny(gray_img, sigma=sigma)
+        # entropy
+        entropy = skimage.measure.shannon_entropy(canny_img)
+        high_freq_entropy_values[idx] = entropy
+
+    
+    if display:
+        fig, ax = plt.subplots()
+        coasts_entropy_values  = high_freq_entropy_values[np.where(labels == 0)]
+        forests_entropy_values = high_freq_entropy_values[np.where(labels == 1)]
+        streets_entropy_values = high_freq_entropy_values[np.where(labels == 2)]
+
+        coasts_mu = np.mean(coasts_entropy_values)
+        forests_mu = np.mean(forests_entropy_values)
+        streets_mu = np.mean(streets_entropy_values)
+
+        coasts_sigma = np.std(coasts_entropy_values) * 2
+        forests_sigma = np.std(forests_entropy_values) * 2
+        streets_sigma = np.std(streets_entropy_values) * 2
+
+
+        ax.scatter(high_freq_entropy_values[np.where(labels == 0)], labels[labels == 0], label='Coasts')
+        ax.scatter(high_freq_entropy_values[np.where(labels == 1)], labels[labels == 1], label='Forests')
+        ax.scatter(high_freq_entropy_values[np.where(labels == 2)], labels[labels == 2], label='Streets')
+        
+        ax.plot(coasts_mu,  0,'kx', markersize=10) 
+        ax.plot(forests_mu, 1,'kx', markersize=10)
+        ax.plot(streets_mu, 2,'kx', markersize=10) 
+
+        ax.plot(coasts_mu - coasts_sigma,  0,'k|', markersize=20) 
+        ax.plot(coasts_mu + coasts_sigma,  0,'k|', markersize=20) 
+        ax.plot(forests_mu - forests_sigma, 1,'k|', markersize=20)
+        ax.plot(forests_mu + forests_sigma, 1,'k|', markersize=20)
+        ax.plot(streets_mu - streets_sigma, 2,'k|', markersize=20) 
+        ax.plot(streets_mu + streets_sigma, 2,'k|', markersize=20) 
+        
+        ax.legend()
+        ax.set_xlabel('Entropy of whole images')
+        ax.set_ylabel('Classes')
+        ax.set_title(r'Entropy of high frequencies for each classes avec moy et 2x std, $\sigma=$' + str(sigma))
+
+        plt.show()
+
+    return high_freq_entropy_values
+
+
 #######################################
 #   Image normalization
 #######################################
@@ -175,35 +226,37 @@ def denormalize_image(img, mu, sigma):
 #######################################
 #   Image normalization
 #######################################
-def correlate2d(data1, data2):
+def correlate2d(data:np.array):
+    for dim in data.shape()[0]: # It should be an array/list of ndim x ndata
+        print(dim)
 
-    vectors = (data1, data2)
-    sigma = np.std(img)
-    n_img = (img - mu) / sigma
-    return [n_img, mu, sigma]
+    # vectors = (data1, data2)
+    # sigma = np.std(img)
+    # n_img = (img - mu) / sigma
+    # return [n_img, mu, sigma]
 
 
 #######################################
 #   Image Loading
 #######################################
 def load_images(directory, normalize=False):
-    images = []
-    labels = []
-    for filename in os.listdir(directory):
+    images = np.zeros((len(os.listdir(directory)), 256, 256, 3))
+    labels = np.zeros(len(os.listdir(directory)))
+    for idx, filename in enumerate(os.listdir(directory)):
         img = cv.imread(os.path.join(directory,filename))
         if img is not None:
             if normalize:
-                images.append(normalize_image(img))
+                images[idx] = normalize_image(img)
             else:
-                images.append(img)
+                images[idx] = img
     
         # Labeling
         if contains(filename, 'coast'):
-            labels.append(0)
+            labels[idx] = 0
         elif contains(filename, 'forest'):
-            labels.append(1)
+            labels[idx] = 1
         elif contains(filename, 'street'):
-            labels.append(2)
+            labels[idx] = 2
     
     return images, labels
 
@@ -215,28 +268,37 @@ def main():
     normalized = False
     dataset_path = './problematique/baseDeDonneesImages'
     dataset_short_path = "./problematique/test/"
-    images, labels = load_images(dataset_short_path, normalize=normalized)
+    images, labels = load_images(dataset_path, normalize=normalized)
 
-    images_mat = []
+    images_mat = np.zeros(len(labels))
     if normalized:
         images_mat = list(map(itemgetter(0), images))
     else:
         images_mat = images
    
+   
+    features = []
     # Features
+    if True:
+        canny = extract_high_freq_entropy(images_mat, labels, sigma=1, display=True)
+        features.append(canny)
     if False:
-        extract_entropy(images_mat, labels)
+        color_hist = extract_color_histogram(images_mat, labels)
+        features.append(color_hist)
     if False:
-        extract_color_histogram(images_mat, labels)
+        simple_stats = extract_simple_stats(images_mat, labels)
+        features.append(simple_stats)
     if False:
-        extract_simple_stats(images_mat, labels)
+        skimage_features = extract_skimage_features(images_mat, labels, display=True)
+        features.append(skimage_features)
     if False:
-        extract_skimage_features(images_mat, labels, display=True)
+        entropy = extract_entropy(images_mat, labels)
+        features.append(entropy)
     
 
     # Correlation
     if True:
-        correlate2d(images, images)
+        correlate2d(np.array(features))
     
 
 
