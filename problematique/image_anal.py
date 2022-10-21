@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 from operator import contains, itemgetter
 from statistics import covariance
 
@@ -175,7 +176,7 @@ def extract_high_freq_entropy(images:np.array, labels:np.array, sigma:int=1, dis
         coasts_entropy_values  = high_freq_entropy_values[np.where(labels == 0)]
         forests_entropy_values = high_freq_entropy_values[np.where(labels == 1)]
         streets_entropy_values = high_freq_entropy_values[np.where(labels == 2)]
-
+        
         coasts_mu = np.mean(coasts_entropy_values)
         forests_mu = np.mean(forests_entropy_values)
         streets_mu = np.mean(streets_entropy_values)
@@ -183,7 +184,6 @@ def extract_high_freq_entropy(images:np.array, labels:np.array, sigma:int=1, dis
         coasts_sigma = np.std(coasts_entropy_values) * 2
         forests_sigma = np.std(forests_entropy_values) * 2
         streets_sigma = np.std(streets_entropy_values) * 2
-
 
         ax.scatter(high_freq_entropy_values[np.where(labels == 0)], labels[labels == 0], label='Coasts')
         ax.scatter(high_freq_entropy_values[np.where(labels == 1)], labels[labels == 1], label='Forests')
@@ -260,6 +260,76 @@ def load_images(directory, normalize=False):
     
     return images, labels
 
+def mean_hsv_features(images: np.array):
+    mean_h = np.mean(images[:,:,0])
+    mean_s = np.mean(images[:,:,1])
+    mean_v = np.mean(images[:,:,2])
+    return mean_h, mean_s, mean_v
+
+def std_hsv_features(images: np.array):
+    std_h = np.std(images[:,:,0])
+    std_s = np.std(images[:,:,1])
+    std_v = np.std(images[:,:,2])
+    return std_h, std_s, std_v
+    
+def hsv_channel_value_of_images(images:np.array, channel: int):
+    out = np.zeros(len(images))
+    for idx, img in enumerate(images):
+        out[idx] = np.mean(img[:,channel])
+    return out
+
+#######################################
+#   convert_to_hsv
+#######################################
+def convert_to_hsv(images:np.array, labels:np.array, display:bool=False):
+    hsv_imgs = np.zeros(images.shape)
+    for idx, img in enumerate(images):
+        img_32 = np.float32(img)
+        hsv_imgs[idx] = cv.cvtColor(img_32, cv.COLOR_RGB2HSV)
+    
+    if display:
+        fig, ax = plt.subplots()
+        coasts_hsv_imgs  = hsv_imgs[np.where(labels==0)]
+        forests_hsv_imgs = hsv_imgs[np.where(labels == 1)]
+        streets_hsv_imgs = hsv_imgs[np.where(labels == 2)]
+        
+        coasts_mean_hsv =  mean_hsv_features(coasts_hsv_imgs)
+        coasts_std_hsv =  std_hsv_features(coasts_hsv_imgs)*2
+    
+        forests_mean_hsv =  mean_hsv_features(forests_hsv_imgs)
+        forests_std_hsv =  std_hsv_features(forests_hsv_imgs)*2
+
+        streets_mean_hsv =  mean_hsv_features(streets_hsv_imgs)
+        streets_std_hsv =  std_hsv_features(streets_hsv_imgs)*2
+        
+        analyzed_channel = 2
+        coasts_h = hsv_channel_value_of_images(coasts_hsv_imgs, analyzed_channel)
+        forests_h =  hsv_channel_value_of_images(forests_hsv_imgs, analyzed_channel)
+        streets_h =  hsv_channel_value_of_images(streets_hsv_imgs, analyzed_channel)
+            
+        ax.scatter(coasts_h, labels[labels == 0], label='Coasts')
+        ax.scatter(forests_h, labels[labels == 1], label='Forests')
+        ax.scatter(streets_h, labels[labels == 2], label='Streets')
+        
+        ax.plot(coasts_mean_hsv[analyzed_channel],  0,'kx', markersize=10) 
+        ax.plot(forests_mean_hsv[analyzed_channel], 1,'kx', markersize=10)
+        ax.plot(streets_mean_hsv[analyzed_channel], 2,'kx', markersize=10) 
+        ax.plot(coasts_mean_hsv[analyzed_channel] - coasts_std_hsv[analyzed_channel] ,  0,'k|', markersize=20) 
+        ax.plot(coasts_mean_hsv[analyzed_channel] + coasts_std_hsv[analyzed_channel] ,  0,'k|', markersize=20) 
+        ax.plot(forests_mean_hsv[analyzed_channel] - forests_std_hsv[analyzed_channel] , 1,'k|', markersize=20)
+        ax.plot(forests_mean_hsv[analyzed_channel] + forests_std_hsv[analyzed_channel] , 1,'k|', markersize=20)
+        ax.plot(streets_mean_hsv[analyzed_channel] - streets_std_hsv[analyzed_channel] , 2,'k|', markersize=20) 
+        ax.plot(streets_mean_hsv[analyzed_channel] + streets_std_hsv[analyzed_channel] , 2,'k|', markersize=20) 
+        
+        ax.legend()
+        ax.set_xlabel('Saturation of whole images')
+        ax.set_ylabel('Classes')
+        ax.set_title(r'Saturation of images')
+
+        plt.show()
+    
+    return hsv_imgs
+
 #######################################
 #   Main
 #######################################
@@ -279,7 +349,7 @@ def main():
    
     features = []
     # Features
-    if True:
+    if False:
         canny = extract_high_freq_entropy(images_mat, labels, sigma=1, display=True)
         features.append(canny)
     if False:
@@ -294,7 +364,12 @@ def main():
     if False:
         entropy = extract_entropy(images_mat, labels)
         features.append(entropy)
-    
+    if True:
+        hsv = convert_to_hsv(images_mat, labels, display=True)
+        features.append(hsv)
+    if False:
+        lab = convert_to_lab(images_mat, labels, display=True)
+        feature.append(lab)
 
     # Correlation
     if True:
