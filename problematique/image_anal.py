@@ -260,18 +260,27 @@ def load_images(directory, normalize=False):
     
     return images, labels
 
+#######################################
+#   mean_hsv_features
+#######################################
 def mean_hsv_features(images: np.array):
     mean_h = np.mean(images[:,:,0])
     mean_s = np.mean(images[:,:,1])
     mean_v = np.mean(images[:,:,2])
     return mean_h, mean_s, mean_v
 
+#######################################
+#   std_hsv_features
+#######################################
 def std_hsv_features(images: np.array):
     std_h = np.std(images[:,:,0])
     std_s = np.std(images[:,:,1])
     std_v = np.std(images[:,:,2])
     return std_h, std_s, std_v
     
+#######################################
+#   hsv_channel_value_of_images
+#######################################
 def hsv_channel_value_of_images(images:np.array, channel: int):
     out = np.zeros(len(images))
     for idx, img in enumerate(images):
@@ -331,6 +340,99 @@ def convert_to_hsv(images:np.array, labels:np.array, display:bool=False):
     return hsv_imgs
 
 #######################################
+#   mean_lab_features
+#######################################
+def mean_lab_features(images: np.array):
+    mean_l = np.mean(images[:,:,0])
+    mean_a = np.mean(images[:,:,1])
+    mean_b = np.mean(images[:,:,2])
+    return mean_l, mean_a, mean_b
+
+#######################################
+#   std_lab_features
+#######################################
+def std_lab_features(images: np.array):
+    std_l = np.std(images[:,:,0])
+    std_a = np.std(images[:,:,1])
+    std_b = np.std(images[:,:,2])
+    return std_l, std_a, std_b
+    
+#######################################
+#   lab_channel_value_of_images
+#######################################
+def lab_channel_value_of_images(images:np.array, channel: int):
+    out = np.zeros(len(images))
+    for idx, img in enumerate(images):
+        out[idx] = np.mean(img[:,channel])
+    return out
+
+#######################################
+#   convert_to_lab
+#######################################
+def convert_to_lab(images:np.array, labels:np.array, display:bool = False):
+    lab_img = np.zeros(images.shape)
+    for idx, img in enumerate(images):
+        img_32 = np.float32(img)
+        lab_img[idx] = cv.cvtColor(img_32, cv.COLOR_RGB2LAB)
+    
+    if display:
+        fig, ax = plt.subplots()
+        coasts_lab_img  = lab_img[np.where(labels==0)]
+        forests_lab_img = lab_img[np.where(labels == 1)]
+        streets_lab_img = lab_img[np.where(labels == 2)]
+        
+        coasts_mean_lab =  mean_lab_features(coasts_lab_img)
+        coasts_std_lab =  std_lab_features(coasts_lab_img)*2
+    
+        forests_mean_lab =  mean_lab_features(forests_lab_img)
+        forests_std_lab =  std_lab_features(forests_lab_img)*2
+
+        streets_mean_lab =  mean_lab_features(streets_lab_img)
+        streets_std_lab =  std_lab_features(streets_lab_img)*2
+        
+        analyzed_channel = 0
+        
+        coasts_l = lab_channel_value_of_images(coasts_lab_img, analyzed_channel)
+        forests_l =  lab_channel_value_of_images(forests_lab_img, analyzed_channel)
+        streets_l =  lab_channel_value_of_images(streets_lab_img, analyzed_channel)
+            
+        coasts_a = lab_channel_value_of_images(coasts_lab_img, 1)
+        forests_a =  lab_channel_value_of_images(forests_lab_img, 1)
+        streets_a =  lab_channel_value_of_images(streets_lab_img, 1)
+        
+        coasts_b = lab_channel_value_of_images(coasts_lab_img, 2)
+        forests_b =  lab_channel_value_of_images(forests_lab_img, 2)
+        streets_b =  lab_channel_value_of_images(streets_lab_img, 2)
+        ax.scatter(coasts_a, coasts_l, label='Coasts')
+        ax.scatter( forests_a, forests_l, label='Forests')
+        ax.scatter( streets_a, streets_l, label='Streets')
+        ax.legend()
+        ax.set_xlabel(f'AB of whole images')
+        ax.set_ylabel('L of whole images')
+        ax.set_title(f'LAB of images')
+        # ax.scatter(coasts_l, labels[labels == 0], label='Coasts')
+        # ax.scatter(forests_l, labels[labels == 1], label='Forests')
+        # ax.scatter(streets_l, labels[labels == 2], label='Streets')
+        
+        # ax.plot(coasts_mean_lab[analyzed_channel],  0,'kx', markersize=10) 
+        # ax.plot(forests_mean_lab[analyzed_channel], 1,'kx', markersize=10)
+        # ax.plot(streets_mean_lab[analyzed_channel], 2,'kx', markersize=10) 
+        # ax.plot(coasts_mean_lab[analyzed_channel] - coasts_std_lab[analyzed_channel] ,  0,'k|', markersize=20) 
+        # ax.plot(coasts_mean_lab[analyzed_channel] + coasts_std_lab[analyzed_channel] ,  0,'k|', markersize=20) 
+        # ax.plot(forests_mean_lab[analyzed_channel] - forests_std_lab[analyzed_channel] , 1,'k|', markersize=20)
+        # ax.plot(forests_mean_lab[analyzed_channel] + forests_std_lab[analyzed_channel] , 1,'k|', markersize=20)
+        # ax.plot(streets_mean_lab[analyzed_channel] - streets_std_lab[analyzed_channel] , 2,'k|', markersize=20) 
+        # ax.plot(streets_mean_lab[analyzed_channel] + streets_std_lab[analyzed_channel] , 2,'k|', markersize=20) 
+        
+        # ax.legend()
+        # ax.set_xlabel(f'{analyzed_channel} of LAB of whole images')
+        # ax.set_ylabel('Classes')
+        # ax.set_title(f'{analyzed_channel} of LAB of images')
+
+        plt.show()
+    return images
+
+#######################################
 #   Main
 #######################################
 def main():
@@ -352,7 +454,7 @@ def main():
     if False:
         canny = extract_high_freq_entropy(images_mat, labels, sigma=1, display=True)
         features.append(canny)
-    if False:
+    if True:
         color_hist = extract_color_histogram(images_mat, labels)
         features.append(color_hist)
     if False:
@@ -364,12 +466,12 @@ def main():
     if False:
         entropy = extract_entropy(images_mat, labels)
         features.append(entropy)
-    if True:
+    if False:
         hsv = convert_to_hsv(images_mat, labels, display=True)
         features.append(hsv)
-    if False:
+    if True:
         lab = convert_to_lab(images_mat, labels, display=True)
-        feature.append(lab)
+        features.append(lab)
 
     # Correlation
     if True:

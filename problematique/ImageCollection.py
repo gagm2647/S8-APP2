@@ -100,7 +100,13 @@ class ImageCollection:
             indexes = [indexes]
 
         fig = plt.figure()
+        figb = plt.figure()
+        figc = plt.figure()
+        figd = plt.figure()
         ax = fig.subplots(len(indexes), 2)
+        bx = figb.subplots(len(indexes), 3)
+        cx = figc.subplots(len(indexes), 2)
+        dx = figd.subplots(len(indexes), 3)
 
         for num_images in range(len(indexes)):
             # charge une image si nécessaire
@@ -109,9 +115,10 @@ class ImageCollection:
             else:
                 imageRGB = skiio.imread(
                     ImageCollection.image_folder + os.sep + ImageCollection.image_list[indexes[num_images]])
-
+                
             # Exemple de conversion de format pour Lab et HSV
-            imageLab = skic.rgb2lab(imageRGB)  # TODO L1.E3.5: afficher ces nouveaux histogrammes
+            imageLab = skic.rgb2lab(imageRGB)
+            imageYcbcr = skic.rgb2ycbcr(imageRGB)
             imageHSV = skic.rgb2hsv(imageRGB)  # TODO problématique: essayer d'autres espaces de couleur
 
             # Number of bins per color channel pour les histogrammes (et donc la quantification de niveau autres formats)
@@ -120,17 +127,19 @@ class ImageCollection:
             # Lab et HSV requiert un rescaling avant d'histogrammer parce que ce sont des floats au départ!
             imageLabhist = rescaleHistLab(imageLab, n_bins) # External rescale pour Lab
             imageHSVhist = np.round(imageHSV * (n_bins - 1))  # HSV has all values between 0 and 100
-
+            imageYcbcrhist = rescaleHistLab(imageYcbcr, n_bins)  
             # Construction des histogrammes
             # 1 histogram per color channel
             pixel_valuesRGB = np.zeros((3, n_bins))
             pixel_valuesLab = np.zeros((3, n_bins))
             pixel_valuesHSV = np.zeros((3, n_bins))
+            pixel_valuesYcbcr = np.zeros((3, n_bins))
             for i in range(n_bins):
                 for j in range(3):
                     pixel_valuesRGB[j, i] = np.count_nonzero(imageRGB[:, :, j] == i)
                     pixel_valuesLab[j, i] = np.count_nonzero(imageLabhist[:, :, j] == i)
                     pixel_valuesHSV[j, i] = np.count_nonzero(imageHSVhist[:, :, j] == i)
+                    pixel_valuesYcbcr[j, i] = np.count_nonzero(imageYcbcrhist[:, :, j] == i)
 
             # permet d'omettre les bins très sombres et très saturées aux bouts des histogrammes
             skip = 5
@@ -138,13 +147,40 @@ class ImageCollection:
             end = n_bins - skip
 
             # affichage des histogrammes
-            ax[num_images, 0].scatter(range(start, end), pixel_valuesRGB[0, start:end], c='red')
-            ax[num_images, 0].scatter(range(start, end), pixel_valuesRGB[1, start:end], c='green')
-            ax[num_images, 0].scatter(range(start, end), pixel_valuesRGB[2, start:end], c='blue')
+            ax[num_images, 0].scatter(range(start, end), pixel_valuesRGB[0, start:end]/np.max(pixel_valuesRGB[0, start:end]), c='red')
+            ax[num_images, 0].scatter(range(start, end), pixel_valuesRGB[1, start:end]/np.max(pixel_valuesRGB[1, start:end]), c='green')
+            ax[num_images, 0].scatter(range(start, end), pixel_valuesRGB[2, start:end]/np.max(pixel_valuesRGB[2, start:end]), c='blue')
             ax[num_images, 0].set(xlabel='pixels', ylabel='compte par valeur d\'intensité')
             # ajouter le titre de la photo observée dans le titre de l'histogramme
             image_name = ImageCollection.image_list[indexes[num_images]]
             ax[num_images, 0].set_title(f'histogramme RGB de {image_name}')
 
             # 2e histogramme
-            # TODO L1.E3 afficher les autres histogrammes de Lab ou HSV dans la 2e colonne de subplots
+            # affichage des histogrammes
+            bx[num_images, 0].scatter(range(start, end), pixel_valuesLab[0, start:end]/np.max(pixel_valuesLab[0, start:end]), c='red') # L*
+            bx[num_images, 0].set(xlabel='pixels', ylabel='luminence')
+            bx[num_images, 1].scatter(range(start, end), pixel_valuesLab[1, start:end]/np.max(pixel_valuesLab[1, start:end]), c='green') # a*
+            bx[num_images, 2].scatter(range(start, end), pixel_valuesLab[2, start:end]/np.max(pixel_valuesLab[2, start:end]), c='blue') # b*
+            bx[num_images, 1].set(xlabel='pixels', ylabel='saturation')
+            # ajouter le titre de la photo observée dans le titre de l'histogramme
+            bx[num_images, 1].set_title(f'histogramme LAB de {image_name}')
+            bx[num_images, 0].set_title(f'histogramme LAB de {image_name}')
+
+             # affichage des histogrammes
+            cx[num_images, 0].scatter(range(start, end), pixel_valuesHSV[0, start:end]/np.max(pixel_valuesHSV[0, start:end]), c='black') # H
+            cx[num_images, 0].set(xlabel='pixels', ylabel='HUE')
+            cx[num_images, 1].set_title(f'histogramme HSV de {image_name}')
+            cx[num_images, 0].set_title(f'histogramme HSV de {image_name}')
+            cx[num_images, 1].scatter(range(start, end), pixel_valuesHSV[1, start:end]/np.max(pixel_valuesHSV[1, start:end]), c='cyan') # S
+            cx[num_images, 1].scatter(range(start, end), pixel_valuesHSV[2, start:end]/np.max(pixel_valuesHSV[2, start:end]), c='magenta') # V
+            cx[num_images, 1].set(xlabel='pixels', ylabel='saturation')
+            # ajouter le titre de la photo observée dans le titre de l'histogramme
+
+            dx[num_images, 0].scatter(range(start, end), pixel_valuesYcbcr[0, start:end]/np.max(pixel_valuesYcbcr[0, start:end]), c='black') # H
+            dx[num_images, 0].set(xlabel='pixels', ylabel='HUE')
+            dx[num_images, 1].set_title(f'histogramme Ycbcr de {image_name}')
+            dx[num_images, 0].set_title(f'histogramme Ycbcr de {image_name}')
+            dx[num_images, 1].scatter(range(start, end), pixel_valuesYcbcr[1, start:end]/np.max(pixel_valuesYcbcr[1, start:end]), c='cyan') # S
+            dx[num_images, 2].scatter(range(start, end), pixel_valuesYcbcr[2, start:end]/np.max(pixel_valuesYcbcr[2, start:end]), c='magenta') # V
+            dx[num_images, 1].set(xlabel='pixels', ylabel='saturation')
+
