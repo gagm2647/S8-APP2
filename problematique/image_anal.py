@@ -1,10 +1,12 @@
 from contextlib import nullcontext
 from operator import contains, itemgetter
+from re import S
 from statistics import covariance
 
 # user imports
 import cv2 as cv
 from cv2 import mean
+from cv2 import threshold
 from matplotlib import image
 import skimage
 from skimage.filters.rank import entropy
@@ -13,6 +15,8 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from scipy import stats
+import copy
 
 
 ### Feature list ###
@@ -181,6 +185,59 @@ def extract_skimage_features(images: np.array, labels: np.array, display: bool =
             fig.tight_layout()
             plt.show()
 
+def extract_daisy_features(images: np.array, labels: np.array, display: bool = False):
+    daisy_values = np.zeros(len(labels))
+    for idx, img in enumerate(images):
+        # edge filter at sigma #1
+        gray_img = skimage.color.rgb2gray(img)
+        canny_img = skimage.feature.canny(gray_img, sigma=sigma)
+        # entropy
+        entropy = skimage.measure.shannon_entropy(canny_img)
+        daisy_values[idx] = entropy
+
+    if display:
+        fig, ax = plt.subplots()
+        coasts_entropy_values = daisy_values[np.where(labels == 0)]
+        forests_entropy_values = daisy_values[np.where(
+            labels == 1)]
+        streets_entropy_values = daisy_values[np.where(
+            labels == 2)]
+
+        coasts_mu = np.mean(coasts_entropy_values)
+        forests_mu = np.mean(forests_entropy_values)
+        streets_mu = np.mean(streets_entropy_values)
+
+        coasts_sigma = np.std(coasts_entropy_values) * 2
+        forests_sigma = np.std(forests_entropy_values) * 2
+        streets_sigma = np.std(streets_entropy_values) * 2
+
+        ax.scatter(daisy_values[np.where(
+            labels == 0)], labels[labels == 0], label='Coasts')
+        ax.scatter(daisy_values[np.where(
+            labels == 1)], labels[labels == 1], label='Forests')
+        ax.scatter(daisy_values[np.where(
+            labels == 2)], labels[labels == 2], label='Streets')
+
+        ax.plot(coasts_mu,  0, 'kx', markersize=10)
+        ax.plot(forests_mu, 1, 'kx', markersize=10)
+        ax.plot(streets_mu, 2, 'kx', markersize=10)
+
+        ax.plot(coasts_mu - coasts_sigma,  0, 'k|', markersize=20)
+        ax.plot(coasts_mu + coasts_sigma,  0, 'k|', markersize=20)
+        ax.plot(forests_mu - forests_sigma, 1, 'k|', markersize=20)
+        ax.plot(forests_mu + forests_sigma, 1, 'k|', markersize=20)
+        ax.plot(streets_mu - streets_sigma, 2, 'k|', markersize=20)
+        ax.plot(streets_mu + streets_sigma, 2, 'k|', markersize=20)
+
+        ax.legend()
+        ax.set_xlabel('Entropy of whole images')
+        ax.set_ylabel('Classes')
+        ax.set_title(
+            r'Entropy of high frequencies for each classes avec moy et 2x std')
+
+        plt.show()
+
+    return daisy_values
 
 def extract_high_freq_entropy(images: np.array, labels: np.array, sigma: int = 1, display: bool = False):
     high_freq_entropy_values = np.zeros(len(labels))
@@ -240,19 +297,95 @@ def extract_high_freq_entropy(images: np.array, labels: np.array, sigma: int = 1
 #######################################
 #   Image normalization
 #######################################
-def normalize_image(img):
+def normalize_image(img:np.array, display:bool = False):
     mu = np.mean(img)
     sigma = np.std(img)
     n_img = (img - mu) / sigma
-    return [n_img, mu, sigma]
 
+    if display:
+        cv.imshow('img', img)
+        cv.imshow('normalized_img', n_img)
+        cv.waitKey()
+        cv.destroyAllWindows()
+
+    return [n_img, mu, sigma]
 
 def denormalize_image(img, mu, sigma):
     return (img * sigma) + mu
 
+#  This function normalizes the color intensities by dividing each color 
+#  value by the sum of all color values. In the case of an RGB image
+#  R = R/(R+G+B), G = G/(R+G+B), B = B/(R+G+B)
+def normalize_intensity(img:np.array):
+    img = copy.deepcopy(img)
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            R_G_B = np.sum(img[i][j]) + 10**-15
+            img[i][j] = img[i][j] / R_G_B
+    return img
+
+
+# This function normalizes for the color spectrum of the illuminant of the
+# scene. Suppose again that we have an RGB image. If (r1,g1,b1) and
+# (r2,g2,b2) are the responses of two points in the image under one colour
+# of light then (k*r1,l*g1,m*b1) and (k*r2,l*g2,m*b2) are the responses of
+# these same point under a different color of light. It can be easily shown
+# that we can cancel the factors (k, l and m):
+#
+# ( 2r1/(r1+r2), 2g1/(r1+r2), 2b1/(r1+r2) ) and
+#
+# ( 2r2/(r1+r2), 2g2/(r1+r2), 2b2/(r1+r2) )
+def normalize_illumination(img:np.array):
+    a = img
+    img = copy.deepcopy(img)
+    N = img.shape[0]
+    for color in range(img.shape[2]):
+        intensity = 3/(N*N) * np.sum(img[:][:][color])
+        img[:][:][color] = img[:][:][color] / intensity
+    
+    return img
+
+# This algorithm is based on the folowing paper:
+# ------
+# Finlayson, G., Schiele, B., & Crowley, J. (1998). 
+# Comprehensive Colour Image Normalization. 
+# Computer Vision�ECCV�98, 1406, 475�490. 
+# https://doi.org/10.1007/BFb0055655
+# ------
+#  Script written by (Niels) N.W. Schurink, 23-11-2016, master 3 student 
+#  Technical Medicine, University of Twente, the Netherlands, during
+#  master thesis at Netherlands Cancer Institute - Antoni van Leeuwenhoek
+#  Ported from MATLAB to PYTHON by Charles-Etienne Granger.
+def comprehensive_color_normalize(img:np.array, display:bool = False):
+    difference = 1
+    threshold = 10**-12
+    prev_img = copy.deepcopy(img)
+    prev_img = prev_img.astype('float64')
+    while difference>threshold:
+        #normalize intensity
+        next_img = normalize_intensity(prev_img)
+        
+        #normalize the illumination
+        next_img = normalize_illumination(next_img)
+
+        # Calcul des diff (# ça pue python)
+        prev_square, next_square = np.square(prev_img), np.square(next_img)
+        prev_sum, next_sum = np.sum(prev_square), np.sum(next_square)
+        prev_sqrt, next_sqrt = np.sqrt(prev_sum), np.sqrt(next_sum)
+        difference = prev_sqrt - next_sqrt
+
+        prev_img = copy.deepcopy(next_img)
+
+    if display:
+        cv.imshow('img', img)
+        cv.imshow('comprehensive normalized_img', prev_img)
+        cv.waitKey()
+        cv.destroyAllWindows()
+
+    return prev_img
 
 #######################################
-#   Image normalization
+#   Correlation des données ?
 #######################################
 def correlate2d(data: np.array):
     for dim in data.shape()[0]:  # It should be an array/list of ndim x ndata
@@ -267,26 +400,38 @@ def correlate2d(data: np.array):
 #######################################
 #   Image Loading
 #######################################
-def load_images(directory, normalize=False):
-    images = np.zeros((len(os.listdir(directory)), 256, 256, 3))
-    labels = np.zeros(len(os.listdir(directory)))
+def load_images(directory, size=256, normalize=False):
+    nb_images = len(os.listdir(directory))
+    images = np.zeros((nb_images, size, size, 3))
+    labels = np.zeros(nb_images)
+    filesizes = np.zeros(nb_images) 
     for idx, filename in enumerate(os.listdir(directory)):
+        filesizes[idx] = (os.stat(os.path.join(directory, filename)).st_size) #Bytes
         img = cv.imread(os.path.join(directory, filename))
         if img is not None:
+            #img = img.astype('uint8')
             if normalize:
-                images[idx] = normalize_image(img)
+                # Normalize (img - mean / sigma)
+                # images[idx], mu, sigma = normalize_image(img, display=False)
+                # Comprehensive color normalize
+                images[idx] = comprehensive_color_normalize(img, display=False)
             else:
                 images[idx] = img
 
-        # Labeling
-        if contains(filename, 'coast'):
-            labels[idx] = 0
-        elif contains(filename, 'forest'):
-            labels[idx] = 1
-        elif contains(filename, 'street'):
-            labels[idx] = 2
+            # Smoll dataset.
+            # p = os.path.join('./problematique/test/small', filename)
+            # s = skimage.transform.resize(img, (32,32))
+            # skimage.io.imsave(p, s)
 
-    return images, labels
+            # Labeling
+            if contains(filename, 'coast'):
+                labels[idx] = 0
+            elif contains(filename, 'forest'):
+                labels[idx] = 1
+            elif contains(filename, 'street'):
+                labels[idx] = 2
+
+    return images, labels, filesizes
 
 #######################################
 #   mean_hsv_features
@@ -546,6 +691,44 @@ def get_fft(images: np.array, labels: np.array, display: bool = False):
         ax.set_title(f'Noise vs. Gray')
         plt.show()
 
+
+def view_filesize(filesizes:np.array, labels:np.array):
+    fig, ax = plt.subplots()
+    coasts_filesizes = filesizes[np.where(labels == 0)]
+    forests_filesizes = filesizes[np.where(labels == 1)]
+    streets_filesizes = filesizes[np.where(labels == 2)]
+
+    coasts_mu = np.mean(coasts_filesizes)
+    forests_mu = np.mean(forests_filesizes)
+    streets_mu = np.mean(streets_filesizes)
+
+    coasts_sigma = np.std(coasts_filesizes) * 2
+    forests_sigma = np.std(forests_filesizes) * 2
+    streets_sigma = np.std(streets_filesizes) * 2
+
+    ax.scatter(filesizes[np.where(labels == 0)], labels[labels == 0], label='Coasts')
+    ax.scatter(filesizes[np.where(labels == 1)], labels[labels == 1], label='Forests')
+    ax.scatter(filesizes[np.where(labels == 2)], labels[labels == 2], label='Streets')
+
+    ax.plot(coasts_mu,  0, 'kx', markersize=10)
+    ax.plot(forests_mu, 1, 'kx', markersize=10)
+    ax.plot(streets_mu, 2, 'kx', markersize=10)
+
+    ax.plot(coasts_mu - coasts_sigma,  0, 'k|', markersize=20)
+    ax.plot(coasts_mu + coasts_sigma,  0, 'k|', markersize=20)
+    ax.plot(forests_mu - forests_sigma, 1, 'k|', markersize=20)
+    ax.plot(forests_mu + forests_sigma, 1, 'k|', markersize=20)
+    ax.plot(streets_mu - streets_sigma, 2, 'k|', markersize=20)
+    ax.plot(streets_mu + streets_sigma, 2, 'k|', markersize=20)
+
+    ax.legend()
+    ax.set_xlabel('Entropy of whole images')
+    ax.set_ylabel('Classes')
+    ax.set_title(r'Filesizes for each classes avec moy et 2x std')
+
+    plt.show()
+
+
 #######################################
 #   Main
 #######################################
@@ -553,44 +736,44 @@ def get_fft(images: np.array, labels: np.array, display: bool = False):
 
 def main():
     # Data load
-    normalized = False
     dataset_path = './problematique/baseDeDonneesImages'
     dataset_short_path = "./problematique/test/"
-    images, labels = load_images(dataset_path, normalize=normalized)
-
-    images_mat = np.zeros(len(labels))
-    if normalized:
-        images_mat = list(map(itemgetter(0), images))
-    else:
-        images_mat = images
+    dataset_32x32_path = './problematique/test/small'
+    images, labels, filesizes = load_images(dataset_short_path, size=256, normalize=True)
 
     features = []
-    # Features
+    # features
+    if False:
+        view_filesize(filesizes, labels)
+    if False:
+        canny = extract_daisy_features(
+            images, labels, sigma=1, display=True)
+        features.append(canny)
     if False:
         canny = extract_high_freq_entropy(
-            images_mat, labels, sigma=1, display=True)
+            images, labels, sigma=1, display=True)
         features.append(canny)
-    if True:
-        color_hist = extract_color_histogram(images_mat, labels)
+    if False:
+        color_hist = extract_color_histogram(images, labels)
         features.append(color_hist)
     if False:
-        simple_stats = extract_simple_stats(images_mat, labels)
+        simple_stats = extract_simple_stats(images, labels)
         features.append(simple_stats)
     if False:
         skimage_features = extract_skimage_features(
-            images_mat, labels, display=True)
+            images, labels, display=True)
         features.append(skimage_features)
     if False:
-        entropy = extract_entropy(images_mat, labels)
+        entropy = extract_entropy(images, labels)
         features.append(entropy)
     if False:
-        hsv = convert_to_hsv(images_mat, labels, display=True)
+        hsv = convert_to_hsv(images, labels, display=True)
         features.append(hsv)
     if False:
-        lab = convert_to_lab(images_mat, labels, display=True)
+        lab = convert_to_lab(images, labels, display=True)
         features.append(lab)
     if False:  # @TODO : make it work, with mean images I guess for the PSNR
-        noise = extract_noise_level(images_mat, labels, True)
+        noise = extract_noise_level(images, labels, True)
     if False:
         fft = get_fft(images, labels, True)
 
