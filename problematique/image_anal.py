@@ -6,7 +6,7 @@ from statistics import covariance
 # user imports
 import cv2 as cv
 from cv2 import mean
-from cv2 import threshold
+from cv2 import integral
 from matplotlib import image
 import skimage
 from skimage.filters.rank import entropy
@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy import stats
 import copy
+from plot import *
 
 
 ### Feature list ###
@@ -97,36 +98,91 @@ def extract_color_histogram(images, labels):
         if labels[idx] == 2:
             color_list[2].append(color)
 
-    view_colors(color_list, n_bins)
+    view_colors(color_list, n_bins, labels)
 
 
-def view_colors(color_list, n_bins):
+def extract_integral_fft(img: np.array, skip: int, nbins: int):
+    ffts = img[:, skip:-skip]
+    integrals = np.zeros(len(img))
+    fftxaxis = range(nbins)[skip:-skip]
+    for i in range(len(img)):
+        ffts[i] = np.abs(np.fft.fftshift(np.fft.fft(img[i])[skip:-skip]))
+        integrals[i] = np.trapz(ffts[i], x=[fftxaxis])
+    return ffts, integrals
+
+
+def view_colors(color_list, n_bins, labels: np.array):
+    integrals = np.zeros((3, 3))
+    stds = np.zeros((3, 3))
+    skip = 15
+    ffts = []
+    integrals = []
     for i in range(3):
         color = np.zeros((3, n_bins))
-        for img in color_list[i]:
+        fftxaxis = range(n_bins)[skip:-skip]
+
+        for k, img in enumerate(color_list[i]):
             color = np.add(color, img)
+            fft, integral = extract_integral_fft(img, skip, n_bins)
+            ffts.append(fft)
+            integrals.append(integral)
+            # plt.figure(k)
+            # plt.scatter(fftxaxis, ffts[0], c='blue')
+            # plt.scatter(fftxaxis, ffts[1], c='green')
+            # plt.scatter(fftxaxis, ffts[2], c='red')
+            # plt.title(f"{k}th img fft")
+        # plt.show()
         color = color / len(color_list[i])
 
-        skip = 15
-        color = color[:][skip:-skip]
-        ffts = np.zeros(color.shape)
-        ffts[0] = np.fft.fftshift(np.fft.fft(color[0]))
-        ffts[1] = np.fft.fftshift(np.fft.fft(color[1]))
-        ffts[2] = np.fft.fftshift(np.fft.fft(color[2]))
+        # colors = color[:, skip:-skip]
+        # ffts = np.zeros(colors.shape)
+        # for j in range(len(ffts)):
+        #     ffts[j] = np.abs(np.fft.fftshift(np.fft.fft(color[j])[skip:-skip]))
+        #     integrals[i][j] = np.trapz(ffts[j], x=[fftxaxis])
+        #     stds[i][j] = np.std(integrals[i][j])
+
+        # compute integral of blue channel
+
         plt.figure(i)
         plt.scatter(range(n_bins), color[0]/max(color[0]), c='blue')
         plt.scatter(range(n_bins), color[1]/max(color[1]), c='green')
         plt.scatter(range(n_bins), color[2]/max(color[2]), c='red')
-        plt.title('Color Range')
-        plt.figure(i+3)
-        plt.scatter(range(n_bins)[skip:-skip], ffts /
-                    max(ffts[0, skip:-skip]), c='blue')
-        plt.scatter(range(n_bins)[skip:-skip], ffts /
-                    max(ffts[1, skip:-skip]), c='green')
-        plt.scatter(range(n_bins)[skip:-skip], ffts /
-                    max(ffts[2, skip:-skip]), c='red')
-        plt.title('FFTs')
-       # plt.set(xlabel='pixels', ylabel='compte par valeur d\'intensité')
+        # plt.title('Color Range')
+        # plt.figure(i+3)
+        # plt.scatter(fftxaxis, ffts[0] / max(ffts[0]), c='blue')
+        # plt.scatter(fftxaxis, ffts[1] / max(ffts[1]), c='green')
+        # plt.scatter(fftxaxis, ffts[2] / max(ffts[2]), c='red')
+        # plt.title('FFTs')
+    ffts = np.array(ffts)
+    integrals = np.array(integrals)
+    coasts_fft = ffts[np.where(labels == 0)]
+    coasts_fft_mean = np.mean(coasts_fft, axis=0)
+    coasts_fft_std = np.std(coasts_fft, axis=0)
+    coasts_integrals = integrals[np.where(labels == 0)]
+    coasts_integrals_mean = np.mean(coasts_integrals, axis=0)
+    coasts_integrals_std = np.std(coasts_integrals, axis=0)
+    forests_fft = ffts[np.where(labels == 1)]
+    forests_fft_mean = np.mean(forests_fft, axis=0)
+    forests_fft_std = np.std(forests_fft, axis=0)
+    forests_integrals = integrals[np.where(labels == 1)]
+    forests_integrals_mean = np.mean(forests_integrals, axis=0)
+    forests_integrals_std = np.std(forests_integrals, axis=0)
+    streets_fft = ffts[np.where(labels == 2)]
+    streets_fft_mean = np.mean(streets_fft, axis=0)
+    streets_fft_std = np.std(streets_fft, axis=0)
+    streets_integrals = integrals[np.where(labels == 2)]
+    streets_integrals_mean = np.mean(streets_integrals, axis=0)
+    streets_integrals_std = np.std(streets_integrals, axis=0)
+
+    data = {
+        "Coasts": coasts_integrals_mean,
+        "Forests": forests_integrals_mean,
+        "Streets": streets_integrals_mean
+    }
+
+    fig, ax = plt.subplots()
+    bar_plot(ax, data, total_width=0.8, single_width=0.9,
+             xbar=['R', 'G', 'B'], stache=[coasts_integrals_std, forests_integrals_std, streets_integrals_std])
 
     plt.show()
 
@@ -408,6 +464,7 @@ def load_images(directory, size=256, normalize=False):
     for idx, filename in enumerate(os.listdir(directory)):
         filesizes[idx] = (os.stat(os.path.join(directory, filename)).st_size) #Bytes
         img = cv.imread(os.path.join(directory, filename))
+        img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
         if img is not None:
             #img = img.astype('uint8')
             if normalize:
@@ -780,6 +837,7 @@ def main():
     # Correlation
     if False:
         correlate2d(np.array(features))
+    return features
 
 
 ######################################
