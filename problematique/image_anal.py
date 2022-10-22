@@ -655,6 +655,7 @@ def main():
     # Correlation
     if False:
         correlate2d(np.array(features))
+    return features
 
 
 ######################################
