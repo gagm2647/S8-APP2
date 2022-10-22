@@ -628,7 +628,7 @@ def main():
         canny = extract_high_freq_entropy(
             images_mat, labels, sigma=1, display=True)
         features.append(canny)
-    if True:
+    if False:
         color_hist = extract_color_histogram(images_mat, labels)
         features.append(color_hist)
     if False:
