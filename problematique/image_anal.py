@@ -1,7 +1,4 @@
-from contextlib import nullcontext
-from operator import contains, itemgetter
-from re import S
-from statistics import covariance
+from operator import contains
 
 # user imports
 import cv2 as cv
@@ -246,7 +243,7 @@ def extract_daisy_features(images: np.array, labels: np.array, display: bool = F
     for idx, img in enumerate(images):
         # edge filter at sigma #1
         gray_img = skimage.color.rgb2gray(img)
-        canny_img = skimage.feature.canny(gray_img, sigma=sigma)
+        canny_img = skimage.feature.canny(gray_img, sigma=1)
         # entropy
         entropy = skimage.measure.shannon_entropy(canny_img)
         daisy_values[idx] = entropy
@@ -456,37 +453,69 @@ def correlate2d(data: np.array):
 #######################################
 #   Image Loading
 #######################################
-def load_images(directory, size=256, normalize=False):
-    nb_images = len(os.listdir(directory))
-    images = np.zeros((nb_images, size, size, 3))
-    labels = np.zeros(nb_images)
-    filesizes = np.zeros(nb_images) 
-    for idx, filename in enumerate(os.listdir(directory)):
-        filesizes[idx] = (os.stat(os.path.join(directory, filename)).st_size) #Bytes
-        img = cv.imread(os.path.join(directory, filename))
-        img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
-        if img is not None:
-            #img = img.astype('uint8')
-            if normalize:
-                # Normalize (img - mean / sigma)
-                # images[idx], mu, sigma = normalize_image(img, display=False)
-                # Comprehensive color normalize
-                images[idx] = comprehensive_color_normalize(img, display=False)
-            else:
-                images[idx] = img
+def load_images(directory, size=256, normalize=False, random=False):
+    filenames = os.listdir(directory)
+    if random:
+        classes = ['coast', 'forest', 'street']
+        nb_images = len(classes)
+        images = np.zeros((nb_images, size, size, 3))
+        labels = np.zeros(nb_images)
+        filesizes = np.zeros(nb_images) 
+        for idx in range(len(classes)):
+            filename = np.random.choice([file for file in filenames if classes[idx] in file])
+            filesizes[idx] = (os.stat(os.path.join(directory, filename)).st_size) #Bytes
+            img = cv.imread(os.path.join(directory, filename))
+            if img is not None:
+                print('load img number:', idx)
+                img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+                if normalize:
+                    # Normalize (img - mean / sigma)
+                    images[idx], mu, sigma = normalize_image(img, display=False)
+                    # Comprehensive color normalize
+                    #images[idx] = comprehensive_color_normalize(img, display=False)
+                else:
+                    images[idx] = img
+                
+                # Labeling
+                if contains(filename, 'coast'):
+                    labels[idx] = 0
+                elif contains(filename, 'forest'):
+                    labels[idx] = 1
+                elif contains(filename, 'street'):
+                    labels[idx] = 2
+    else:
+        nb_images = len(filenames)
+        images = np.zeros((nb_images, size, size, 3))
+        labels = np.zeros(nb_images)
+        filesizes = np.zeros(nb_images) 
+        for idx, filename in enumerate(filenames):
+            filesizes[idx] = (os.stat(os.path.join(directory, filename)).st_size) #Bytes
+            img = cv.imread(os.path.join(directory, filename))
+            if img is not None:
+                print('load img number:', idx)
+                img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+                #img = img.astype('uint8')
+                if normalize:
+                    # Normalize (img - mean / sigma)
+                    images[idx], mu, sigma = normalize_image(img, display=False)
+                    # Comprehensive color normalize
+                    #images[idx] = comprehensive_color_normalize(img, display=False)
+                else:
+                    images[idx] = img
 
-            # Smoll dataset.
-            # p = os.path.join('./problematique/test/small', filename)
-            # s = skimage.transform.resize(img, (32,32))
-            # skimage.io.imsave(p, s)
+                # Smoll dataset.
+                # p = os.path.join('./problematique/test/small', filename)
+                # s = skimage.transform.resize(img, (32,32))
+                # skimage.io.imsave(p, s)
 
-            # Labeling
-            if contains(filename, 'coast'):
-                labels[idx] = 0
-            elif contains(filename, 'forest'):
-                labels[idx] = 1
-            elif contains(filename, 'street'):
-                labels[idx] = 2
+                # Labeling
+                if contains(filename, 'coast'):
+                    labels[idx] = 0
+                elif contains(filename, 'forest'):
+                    labels[idx] = 1
+                elif contains(filename, 'street'):
+                    labels[idx] = 2
+            
 
     return images, labels, filesizes
 
@@ -785,6 +814,75 @@ def view_filesize(filesizes:np.array, labels:np.array):
 
     plt.show()
 
+# from skimage import data, io, segmentation, color
+# from skimage.future import graph
+def rag_merging(images:np.array):
+    outs = np.zeros(images.shape)
+    for idx, img in enumerate(images):
+        # img[:, :, 0] = img[:, :, 0] / (np.max(img[:, :, 0]) * 256 + 10**-15)
+        # img[:, :, 1] = img[:, :, 1] / (np.max(img[:, :, 1]) * 256 + 10**-15)
+        # img[:, :, 2] = img[:, :, 2] / (np.max(img[:, :, 2]) * 256 + 10**-15)
+        print('rag img number:', idx)
+        rag_labels = skimage.segmentation.slic(img, compactness=30, n_segments=400, start_label=1)
+        g = skimage.future.graph.rag_mean_color(img, rag_labels)
+
+        rag_labels2 = skimage.future.graph.merge_hierarchical(rag_labels, g, thresh=35, rag_copy=False,
+                                        in_place_merge=True,
+                                        merge_func=merge_mean_color,
+                                        weight_func=weight_mean_color)
+
+        out = skimage.color.label2rgb(rag_labels2, img, kind='avg', bg_label=0)
+        out = skimage.segmentation.mark_boundaries(out, rag_labels2, (0, 0, 0))
+        outs[idx] = out
+        # cv.imshow('original img', img.astype(np.uint8))
+        # cv.imshow('rag merged img', out.astype(np.uint8))
+        # cv.waitKey()
+        # cv.destroyAllWindows()
+    return outs
+
+def weight_mean_color(graph, src, dst, n):
+    """Callback to handle merging nodes by recomputing mean color.
+
+    The method expects that the mean color of `dst` is already computed.
+
+    Parameters
+    ----------
+    graph : RAG
+        The graph under consideration.
+    src, dst : int
+        The vertices in `graph` to be merged.
+    n : int
+        A neighbor of `src` or `dst` or both.
+
+    Returns
+    -------
+    data : dict
+        A dictionary with the `"weight"` attribute set as the absolute
+        difference of the mean color between node `dst` and `n`.
+    """
+
+    diff = graph.nodes[dst]['mean color'] - graph.nodes[n]['mean color']
+    diff = np.linalg.norm(diff)
+    return {'weight': diff}
+
+
+def merge_mean_color(graph, src, dst):
+    """Callback called before merging two nodes of a mean color distance graph.
+
+    This method computes the mean color of `dst`.
+
+    Parameters
+    ----------
+    graph : RAG
+        The graph under consideration.
+    src, dst : int
+        The vertices in `graph` to be merged.
+    """
+    graph.nodes[dst]['total color'] += graph.nodes[src]['total color']
+    graph.nodes[dst]['pixel count'] += graph.nodes[src]['pixel count']
+    graph.nodes[dst]['mean color'] = (graph.nodes[dst]['total color'] /
+                                      graph.nodes[dst]['pixel count'])
+
 
 #######################################
 #   Main
@@ -796,10 +894,15 @@ def main():
     dataset_path = './problematique/baseDeDonneesImages'
     dataset_short_path = "./problematique/test/"
     dataset_32x32_path = './problematique/test/small'
-    images, labels, filesizes = load_images(dataset_short_path, size=256, normalize=True)
+    images, labels, filesizes = load_images(dataset_32x32_path, size=32, normalize=False, random=False)
 
     features = []
     # features
+    if True:
+        x = rag_merging(images)
+        canny = extract_high_freq_entropy(
+            x, labels, sigma=1, display=True)
+        features.append(canny)
     if False:
         view_filesize(filesizes, labels)
     if False:
