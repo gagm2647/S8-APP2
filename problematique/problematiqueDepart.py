@@ -204,7 +204,7 @@ def main():
         dataset_32x32_path, size=32, normalize=False, random=False)
 
     features = image_anal.main(images, labels)[0]
-
+    
     length = 290
     
     coasts_features = features[np.where(labels == 0)][:length]

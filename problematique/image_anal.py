@@ -827,6 +827,38 @@ def merge_mean_color(graph, src, dst):
     graph.nodes[dst]['mean color'] = (graph.nodes[dst]['total color'] /
                                       graph.nodes[dst]['pixel count'])
 
+def filter_hist(images, labels):
+    color_list = [[], [], []]  # Coast, Forest, Street | intensity bins
+    n_bins = 256
+    color_int_rel = np.zeros((3, 4))
+    for idx, img in enumerate(images):
+        # Color bining
+        color = np.zeros((3, n_bins))
+        for i in range(n_bins):
+            for j in range(3):
+                color[j, i] = np.count_nonzero(img[:, :, j] == i)
+
+        # Labeling
+        if labels[idx] == 0:
+            color_list[0].append(color)
+        if labels[idx] == 1:
+            color_list[1].append(color)
+        if labels[idx] == 2:
+            color_list[2].append(color)
+
+    for i in range(3):
+        counter = 0
+        color = np.zeros((3, n_bins))
+        for img in color_list[i]:
+            counter += 1
+            color += img
+        color = color / counter
+        color_int_rel[i, 0] = (color[1, 100] / max(color[1])) - (color[0, 100] / max(color[0])) #G - B
+        color_int_rel[i, 1] = (color[1, 100] / max(color[1])) - (color[2, 100] / max(color[2])) #G - R
+        color_int_rel[i, 2] = (color[0, 100] / max(color[0])) - (color[2, 100] / max(color[2])) #B - R
+        color_int_rel[i, 3] = color_int_rel[i, 0] + color_int_rel[i, 1] + color_int_rel[i, 2]  # Sum
+
+    return color_int_rel[0, 3], color_int_rel[1, 3], color_int_rel[2, 3]
 
 #######################################
 #   Main
@@ -883,6 +915,8 @@ def main(images: np.array, labels: np.array):
         noise = extract_noise_level(images, labels, True)
     if False:
         fft = get_fft(images, labels, True)
+    if False:
+        col_diff_coast, col_diff_forest, col_diff_street = filter_hist(images, labels)
 
     # Correlation
     if False:
