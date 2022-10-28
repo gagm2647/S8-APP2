@@ -310,7 +310,7 @@ def full_nn(n_hiddenlayers, n_neurons, train_data, train_classes, test1, title, 
 
     error_class = 6  # optionnel, assignation d'une classe différente à toutes les données en erreur, aide pour la visualisation
     if np.asarray(test2).any():
-        predictions2 = predictions2.reshape(len(test2), 1)
+        # predictions2 = predictions2.reshape(len(test2), 1)
         # calcul des points en erreur à l'échelle du système
         error_indexes = calc_erreur_classification(classes2, predictions2)
         predictions2[error_indexes] = error_class

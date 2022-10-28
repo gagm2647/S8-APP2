@@ -201,8 +201,8 @@ def view_classification_results(train_data, test1, c1, c2, glob_title, title1, t
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1)
         ax3.scatter(test2[:, 0], test2[:, 1], s=5, c=cmap(c3))
         ax3.set_title(title3)
-        # ax3.set_xlim([extent.xmin, extent.xmax])
-        # ax3.set_ylim([extent.ymin, extent.ymax])
+        ax3.set_xlim([extent.xmin, extent.xmax])
+        ax3.set_ylim([extent.ymin, extent.ymax])
         ax3.axes.set_aspect('equal')
     else:
         fig, (ax1, ax2) = plt.subplots(2, 1)
@@ -211,10 +211,10 @@ def view_classification_results(train_data, test1, c1, c2, glob_title, title1, t
     ax2.scatter(test1[:, 0], test1[:, 1], s=5, c=c2, cmap='viridis')
     ax1.set_title(title1)
     ax2.set_title(title2)
-    # ax1.set_xlim([extent.xmin, extent.xmax])
-    # ax1.set_ylim([extent.ymin, extent.ymax])
-    # ax2.set_xlim([extent.xmin, extent.xmax])
-    # ax2.set_ylim([extent.ymin, extent.ymax])
+    ax1.set_xlim([extent.xmin, extent.xmax])
+    ax1.set_ylim([extent.ymin, extent.ymax])
+    ax2.set_xlim([extent.xmin, extent.xmax])
+    ax2.set_ylim([extent.ymin, extent.ymax])
     ax1.axes.set_aspect('equal')
     ax2.axes.set_aspect('equal')
 
@@ -338,8 +338,8 @@ def calcModeleGaussien(data, message=''):
     """
     # TODO L1.E2.2 Remplacer les valeurs bidons avec les fonctions appropriées ici
 
-    moyenne = np.round([np.mean(data[:,0]), np.mean(data[:,1])])
-    matr_cov = np.round(np.cov(data[:,0], data[:,1]))
+    moyenne = np.mean(data, axis=0)
+    matr_cov = np.cov(data)
     val_propres, vect_propres = np.linalg.eigh(matr_cov)
     
     if message:
@@ -369,8 +369,8 @@ def genDonneesTest(ndonnees, extent, ndim):
     data = np.zeros((ndonnees, ndim))
     for dim in range(ndim):
         data[:, dim] = np.array((extent.xmax - extent.xmin) * np.random.random(ndonnees) + extent.xmin)
-    return data
 
+    return data
 
 
 # usage: OUT = scale_data(IN, MINMAX)
