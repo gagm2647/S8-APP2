@@ -161,13 +161,13 @@ def main():
     features = features / np.max(features)
     labels = np.array([coasts_labels, forests_labels, streets_labels]).reshape(-1)
 
-    donneesTest = []
+    ndonnees = 5000
+    min, max = np.min(features), np.max(features)
+    donneesTest = an.genDonneesTest(ndonnees, an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), ndim=3)
 
     if True:
         x = [coasts_features, forests_features, streets_features] / np.max(features)
-        ndonnees = 5000
-        min, max = np.min(features), np.max(features)
-        donneesTest = an.genDonneesTest(ndonnees, an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), ndim=3)
+        
         # TODO Classifier Bayesien
         # classification
         # Bayes
