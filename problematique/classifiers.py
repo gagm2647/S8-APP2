@@ -144,7 +144,7 @@ def kmean_alg(n_clusters, data):
     # calcule les représentants pour chaque classe séparément
     for i in range(x):
         # TODO L2.E3.3 compléter la logique pour utiliser la librairie ici
-        kmeans_C = km(1)
+        kmeans_C = km(n_clusters)
         kmeans_C.fit(np.array(data[i]))
         cluster_centers.append(kmeans_C.cluster_centers_)
         cluster_labels[range(n_clusters * i, n_clusters * (i + 1))] = i  # assigne la classe en ordre ordinal croissant
@@ -262,7 +262,7 @@ def full_ppv(n_neighbors, train_data, train_classes, datatest1, title, extent, d
     predictions, predictions2 = ppv_classify(n_neighbors, train_data, train_classes.ravel(), datatest1, datatest2)
     predictions = predictions.reshape(len(datatest1), 1)
 
-    error_class = 6  # optionnel, assignation d'une classe différente à toutes les données en erreur, aide pour la visualisation
+    error_class = 1  # optionnel, assignation d'une classe différente à toutes les données en erreur, aide pour la visualisation
     if np.asarray(datatest2).any():
         predictions2 = predictions2.reshape(len(datatest2), 1)
         # calcul des points en erreur à l'échelle du système
@@ -310,7 +310,7 @@ def full_nn(n_hiddenlayers, n_neurons, train_data, train_classes, test1, title, 
 
     error_class = 6  # optionnel, assignation d'une classe différente à toutes les données en erreur, aide pour la visualisation
     if np.asarray(test2).any():
-        predictions2 = predictions2.reshape(len(test2), 1)
+        # predictions2 = predictions2.reshape(len(test2), 1)
         # calcul des points en erreur à l'échelle du système
         error_indexes = calc_erreur_classification(classes2, predictions2)
         predictions2[error_indexes] = error_class

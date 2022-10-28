@@ -369,7 +369,8 @@ def genDonneesTest(ndonnees, extent, ndim):
     data = np.zeros((ndonnees, ndim))
     for dim in range(ndim):
         data[:, dim] = np.array((extent.xmax - extent.xmin) * np.random.random(ndonnees) + extent.xmin)
-    return data 
+
+    return data
 
 
 # usage: OUT = scale_data(IN, MINMAX)
