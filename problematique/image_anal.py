@@ -1,4 +1,3 @@
-from operator import contains
 
 # user imports
 import cv2 as cv
@@ -8,7 +7,6 @@ from matplotlib import image
 import skimage
 from skimage.filters.rank import entropy
 from skimage.morphology import disk
-import os
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -238,6 +236,7 @@ def extract_skimage_features(images: np.array, labels: np.array, display: bool =
             fig.tight_layout()
             plt.show()
 
+
 def extract_daisy_features(images: np.array, labels: np.array, display: bool = False):
     daisy_values = np.zeros(len(labels))
     for idx, img in enumerate(images):
@@ -291,6 +290,7 @@ def extract_daisy_features(images: np.array, labels: np.array, display: bool = F
         plt.show()
 
     return daisy_values
+
 
 def extract_high_freq_entropy(images: np.array, labels: np.array, sigma: int = 1, display: bool = False):
     high_freq_entropy_values = np.zeros(len(labels))
@@ -347,29 +347,15 @@ def extract_high_freq_entropy(images: np.array, labels: np.array, sigma: int = 1
     return high_freq_entropy_values
 
 
-#######################################
-#   Image normalization
-#######################################
-def normalize_image(img:np.array, display:bool = False):
-    mu = np.mean(img)
-    sigma = np.std(img)
-    n_img = (img - mu) / sigma
-
-    if display:
-        cv.imshow('img', img)
-        cv.imshow('normalized_img', n_img)
-        cv.waitKey()
-        cv.destroyAllWindows()
-
-    return [n_img, mu, sigma]
-
 def denormalize_image(img, mu, sigma):
     return (img * sigma) + mu
 
-#  This function normalizes the color intensities by dividing each color 
+#  This function normalizes the color intensities by dividing each color
 #  value by the sum of all color values. In the case of an RGB image
 #  R = R/(R+G+B), G = G/(R+G+B), B = B/(R+G+B)
-def normalize_intensity(img:np.array):
+
+
+def normalize_intensity(img: np.array):
     img = copy.deepcopy(img)
     for i in range(img.shape[0]):
         for j in range(img.shape[1]):
@@ -388,37 +374,39 @@ def normalize_intensity(img:np.array):
 # ( 2r1/(r1+r2), 2g1/(r1+r2), 2b1/(r1+r2) ) and
 #
 # ( 2r2/(r1+r2), 2g2/(r1+r2), 2b2/(r1+r2) )
-def normalize_illumination(img:np.array):
+def normalize_illumination(img: np.array):
     a = img
     img = copy.deepcopy(img)
     N = img.shape[0]
     for color in range(img.shape[2]):
         intensity = 3/(N*N) * np.sum(img[:][:][color])
         img[:][:][color] = img[:][:][color] / intensity
-    
+
     return img
 
 # This algorithm is based on the folowing paper:
 # ------
-# Finlayson, G., Schiele, B., & Crowley, J. (1998). 
-# Comprehensive Colour Image Normalization. 
-# Computer Vision�ECCV�98, 1406, 475�490. 
+# Finlayson, G., Schiele, B., & Crowley, J. (1998).
+# Comprehensive Colour Image Normalization.
+# Computer Vision�ECCV�98, 1406, 475�490.
 # https://doi.org/10.1007/BFb0055655
 # ------
-#  Script written by (Niels) N.W. Schurink, 23-11-2016, master 3 student 
+#  Script written by (Niels) N.W. Schurink, 23-11-2016, master 3 student
 #  Technical Medicine, University of Twente, the Netherlands, during
 #  master thesis at Netherlands Cancer Institute - Antoni van Leeuwenhoek
 #  Ported from MATLAB to PYTHON by Charles-Etienne Granger.
-def comprehensive_color_normalize(img:np.array, display:bool = False):
+
+
+def comprehensive_color_normalize(img: np.array, display: bool = False):
     difference = 1
     threshold = 10**-12
     prev_img = copy.deepcopy(img)
     prev_img = prev_img.astype('float64')
-    while difference>threshold:
-        #normalize intensity
+    while difference > threshold:
+        # normalize intensity
         next_img = normalize_intensity(prev_img)
-        
-        #normalize the illumination
+
+        # normalize the illumination
         next_img = normalize_illumination(next_img)
 
         # Calcul des diff (# ça pue python)
@@ -440,6 +428,8 @@ def comprehensive_color_normalize(img:np.array, display:bool = False):
 #######################################
 #   Correlation des données ?
 #######################################
+
+
 def correlate2d(data: np.array):
     for dim in data.shape()[0]:  # It should be an array/list of ndim x ndata
         print(dim)
@@ -449,75 +439,6 @@ def correlate2d(data: np.array):
     # n_img = (img - mu) / sigma
     # return [n_img, mu, sigma]
 
-
-#######################################
-#   Image Loading
-#######################################
-def load_images(directory, size=256, normalize=False, random=False):
-    filenames = os.listdir(directory)
-    if random:
-        classes = ['coast', 'forest', 'street']
-        nb_images = len(classes)
-        images = np.zeros((nb_images, size, size, 3))
-        labels = np.zeros(nb_images)
-        filesizes = np.zeros(nb_images) 
-        for idx in range(len(classes)):
-            filename = np.random.choice([file for file in filenames if classes[idx] in file])
-            filesizes[idx] = (os.stat(os.path.join(directory, filename)).st_size) #Bytes
-            img = cv.imread(os.path.join(directory, filename))
-            if img is not None:
-                print('load img number:', idx)
-                img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
-                if normalize:
-                    # Normalize (img - mean / sigma)
-                    images[idx], mu, sigma = normalize_image(img, display=False)
-                    # Comprehensive color normalize
-                    #images[idx] = comprehensive_color_normalize(img, display=False)
-                else:
-                    images[idx] = img
-                
-                # Labeling
-                if contains(filename, 'coast'):
-                    labels[idx] = 0
-                elif contains(filename, 'forest'):
-                    labels[idx] = 1
-                elif contains(filename, 'street'):
-                    labels[idx] = 2
-    else:
-        nb_images = len(filenames)
-        images = np.zeros((nb_images, size, size, 3))
-        labels = np.zeros(nb_images)
-        filesizes = np.zeros(nb_images) 
-        for idx, filename in enumerate(filenames):
-            filesizes[idx] = (os.stat(os.path.join(directory, filename)).st_size) #Bytes
-            img = cv.imread(os.path.join(directory, filename))
-            if img is not None:
-                print('load img number:', idx)
-                img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
-                #img = img.astype('uint8')
-                if normalize:
-                    # Normalize (img - mean / sigma)
-                    images[idx], mu, sigma = normalize_image(img, display=False)
-                    # Comprehensive color normalize
-                    #images[idx] = comprehensive_color_normalize(img, display=False)
-                else:
-                    images[idx] = img
-
-                # Smoll dataset.
-                # p = os.path.join('./problematique/test/small', filename)
-                # s = skimage.transform.resize(img, (32,32))
-                # skimage.io.imsave(p, s)
-
-                # Labeling
-                if contains(filename, 'coast'):
-                    labels[idx] = 0
-                elif contains(filename, 'forest'):
-                    labels[idx] = 1
-                elif contains(filename, 'street'):
-                    labels[idx] = 2
-            
-
-    return images, labels, filesizes
 
 #######################################
 #   mean_hsv_features
@@ -778,7 +699,7 @@ def get_fft(images: np.array, labels: np.array, display: bool = False):
         plt.show()
 
 
-def view_filesize(filesizes:np.array, labels:np.array):
+def view_filesize(filesizes: np.array, labels: np.array):
     fig, ax = plt.subplots()
     coasts_filesizes = filesizes[np.where(labels == 0)]
     forests_filesizes = filesizes[np.where(labels == 1)]
@@ -792,9 +713,12 @@ def view_filesize(filesizes:np.array, labels:np.array):
     forests_sigma = np.std(forests_filesizes) * 2
     streets_sigma = np.std(streets_filesizes) * 2
 
-    ax.scatter(filesizes[np.where(labels == 0)], labels[labels == 0], label='Coasts')
-    ax.scatter(filesizes[np.where(labels == 1)], labels[labels == 1], label='Forests')
-    ax.scatter(filesizes[np.where(labels == 2)], labels[labels == 2], label='Streets')
+    ax.scatter(filesizes[np.where(labels == 0)],
+               labels[labels == 0], label='Coasts')
+    ax.scatter(filesizes[np.where(labels == 1)],
+               labels[labels == 1], label='Forests')
+    ax.scatter(filesizes[np.where(labels == 2)],
+               labels[labels == 2], label='Streets')
 
     ax.plot(coasts_mu,  0, 'kx', markersize=10)
     ax.plot(forests_mu, 1, 'kx', markersize=10)
@@ -816,20 +740,23 @@ def view_filesize(filesizes:np.array, labels:np.array):
 
 # from skimage import data, io, segmentation, color
 # from skimage.future import graph
-def rag_merging(images:np.array):
+
+
+def rag_merging(images: np.array):
     outs = np.zeros(images.shape)
     for idx, img in enumerate(images):
         # img[:, :, 0] = img[:, :, 0] / (np.max(img[:, :, 0]) * 256 + 10**-15)
         # img[:, :, 1] = img[:, :, 1] / (np.max(img[:, :, 1]) * 256 + 10**-15)
         # img[:, :, 2] = img[:, :, 2] / (np.max(img[:, :, 2]) * 256 + 10**-15)
         print('rag img number:', idx)
-        rag_labels = skimage.segmentation.slic(img, compactness=30, n_segments=400, start_label=1)
+        rag_labels = skimage.segmentation.slic(
+            img, compactness=30, n_segments=400, start_label=1)
         g = skimage.future.graph.rag_mean_color(img, rag_labels)
 
         rag_labels2 = skimage.future.graph.merge_hierarchical(rag_labels, g, thresh=35, rag_copy=False,
-                                        in_place_merge=True,
-                                        merge_func=merge_mean_color,
-                                        weight_func=weight_mean_color)
+                                                              in_place_merge=True,
+                                                              merge_func=merge_mean_color,
+                                                              weight_func=weight_mean_color)
 
         out = skimage.color.label2rgb(rag_labels2, img, kind='avg', bg_label=0)
         out = skimage.segmentation.mark_boundaries(out, rag_labels2, (0, 0, 0))
@@ -839,6 +766,7 @@ def rag_merging(images:np.array):
         # cv.waitKey()
         # cv.destroyAllWindows()
     return outs
+
 
 def weight_mean_color(graph, src, dst, n):
     """Callback to handle merging nodes by recomputing mean color.
@@ -889,13 +817,7 @@ def merge_mean_color(graph, src, dst):
 #######################################
 
 
-def main():
-    # Data load
-    dataset_path = './problematique/baseDeDonneesImages'
-    dataset_short_path = "./problematique/test/"
-    dataset_32x32_path = './problematique/test/small'
-    images, labels, filesizes = load_images(dataset_32x32_path, size=32, normalize=False, random=False)
-
+def main(images: np.array, labels: np.array):
     features = []
     # features
     if True:
@@ -940,7 +862,7 @@ def main():
     # Correlation
     if False:
         correlate2d(np.array(features))
-    return features
+    return np.array(features)
 
 
 ######################################

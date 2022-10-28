@@ -61,7 +61,8 @@ def compute_prob_dens_gaussian(train_data, test_data1, test_data2):
         test_data2 par rapport à chaque classe
     """
     train_data = np.array(train_data)
-    x, y, z = train_data.shape
+    x, y = train_data.shape
+    z = 1
 
     # bâtit la liste de toutes les stats
     # i.e. un modèle
