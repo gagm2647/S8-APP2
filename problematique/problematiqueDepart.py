@@ -13,6 +13,7 @@ from ImageCollection import ImageCollection
 import image_anal
 import os
 import cv2 as cv
+import copy
 
 import classifiers
 import analysis as an
@@ -32,10 +33,84 @@ def start_main():
 #######################################
 #   Image normalization
 #######################################
+#  This function normalizes the color intensities by dividing each color
+#  value by the sum of all color values. In the case of an RGB image
+#  R = R/(R+G+B), G = G/(R+G+B), B = B/(R+G+B)
+def normalize_intensity(img: np.array):
+    img = copy.deepcopy(img)
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            R_G_B = np.sum(img[i][j])
+            img[i][j] = img[i][j] / R_G_B if R_G_B > 0 else np.zeros(3)
+    return img
+
+
+# This function normalizes for the color spectrum of the illuminant of the
+# scene. Suppose again that we have an RGB image. If (r1,g1,b1) and
+# (r2,g2,b2) are the responses of two points in the image under one colour
+# of light then (k*r1,l*g1,m*b1) and (k*r2,l*g2,m*b2) are the responses of
+# these same point under a different color of light. It can be easily shown
+# that we can cancel the factors (k, l and m):
+#
+# ( 2r1/(r1+r2), 2g1/(r1+r2), 2b1/(r1+r2) ) and
+#
+# ( 2r2/(r1+r2), 2g2/(r1+r2), 2b2/(r1+r2) )
+def normalize_illumination(img: np.array):
+    a = img
+    img = copy.deepcopy(img)
+    N = img.shape[0]
+    for color in range(img.shape[2]):
+        intensity = 3/(N*N) * np.sum(img[:, :, color])
+        img[:, :, color] = img[:, :, color] / intensity
+    
+
+    return img
+
+# This algorithm is based on the folowing paper:
+# ------
+# Finlayson, G., Schiele, B., & Crowley, J. (1998).
+# Comprehensive Colour Image Normalization.
+# Computer Vision�ECCV�98, 1406, 475�490.
+# https://doi.org/10.1007/BFb0055655
+# ------
+#  Script written by (Niels) N.W. Schurink, 23-11-2016, master 3 student
+#  Technical Medicine, University of Twente, the Netherlands, during
+#  master thesis at Netherlands Cancer Institute - Antoni van Leeuwenhoek
+#  Ported from MATLAB to PYTHON by Charles-Etienne Granger.
+
+
+def comprehensive_color_normalize(img: np.array, display: bool = False):
+    difference = 1
+    threshold = 10**-19
+    prev_img = copy.deepcopy(img)
+    prev_img = prev_img.astype('float64')
+    while difference > threshold:
+        # normalize intensity
+        next_img = normalize_intensity(prev_img)
+
+        # normalize the illumination
+        next_img = normalize_illumination(next_img)
+
+        # Calcul des diff (# ça pue python)
+        prev_square, next_square = np.square(prev_img), np.square(next_img)
+        prev_sum, next_sum = np.sum(prev_square), np.sum(next_square)
+        prev_sqrt, next_sqrt = np.sqrt(prev_sum), np.sqrt(next_sum)
+        difference = prev_sqrt - next_sqrt
+
+        prev_img = copy.deepcopy(next_img)
+
+    if display:
+        cv.imshow('img', img)
+        cv.imshow('comprehensive normalized_img', prev_img)
+        cv.waitKey()
+        cv.destroyAllWindows()
+
+    return prev_img
+
 def normalize_image(img: np.array, display: bool = False):
     mu = np.mean(img)
     sigma = np.std(img)
-    n_img = (img - mu) / sigma
+    n_img = (img - mu) / sigma if sigma > 1 else img
 
     if display:
         cv.imshow('img', img)
@@ -69,10 +144,9 @@ def load_images(directory, size=256, normalize=False, random=False):
                 img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
                 if normalize:
                     # Normalize (img - mean / sigma)
-                    images[idx], mu, sigma = normalize_image(
-                        img, display=False)
+                    # images[idx], mu, sigma = normalize_image(img, display=False)
                     # Comprehensive color normalize
-                    #images[idx] = comprehensive_color_normalize(img, display=False)
+                    images[idx] = comprehensive_color_normalize(img, display=False)
                 else:
                     images[idx] = img
 
@@ -98,8 +172,7 @@ def load_images(directory, size=256, normalize=False, random=False):
                 #img = img.astype('uint8')
                 if normalize:
                     # Normalize (img - mean / sigma)
-                    images[idx], mu, sigma = normalize_image(
-                        img, display=False)
+                     images[idx], mu, sigma = normalize_image(img, display=False)
                     # Comprehensive color normalize
                     #images[idx] = comprehensive_color_normalize(img, display=False)
                 else:
@@ -128,7 +201,7 @@ def main():
     dataset_32x32_path = './problematique/test/small'
 
     images, labels, filesizes = load_images(
-        dataset_path, size=256, normalize=False, random=False)
+        dataset_32x32_path, size=32, normalize=False, random=False)
 
     features = image_anal.main(images, labels)[0]
 
