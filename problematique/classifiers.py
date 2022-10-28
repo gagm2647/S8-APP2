@@ -61,8 +61,7 @@ def compute_prob_dens_gaussian(train_data, test_data1, test_data2):
         test_data2 par rapport à chaque classe
     """
     train_data = np.array(train_data)
-    x, y = train_data.shape
-    z = 1
+    x, y, z = train_data.shape
 
     # bâtit la liste de toutes les stats
     # i.e. un modèle
@@ -179,10 +178,10 @@ def nn_classify(n_hidden_layers, n_neurons, train_data, classes, test1, test2=No
     # Create neural network
     # TODO L3.E2.6 Tune the number and size of hidden layers
     NNmodel = Sequential()
-    NNmodel.add(Dense(units=n_neurons, activation='sigmoid', input_shape=(data.shape[-1],)))
+    NNmodel.add(Dense(units=n_neurons, activation='tanh', input_shape=(data.shape[-1],)))
     for i in range(2, n_hidden_layers):
-        NNmodel.add(Dense(units=n_neurons, activation='sigmoid'))
-    NNmodel.add(Dense(units=targets.shape[-1], activation='sigmoid'))
+        NNmodel.add(Dense(units=n_neurons, activation='tanh'))
+    NNmodel.add(Dense(units=targets.shape[-1], activation='tanh'))
     print(NNmodel.summary())
 
     # Define training parameters
@@ -192,7 +191,7 @@ def nn_classify(n_hidden_layers, n_neurons, train_data, classes, test1, test2=No
 
     # Perform training
     # TODO L3.E2.4
-    callback_list = [K.callbacks.EarlyStopping(patience=100, verbose=1, restore_best_weights=1), print_every_N_epochs(25)]
+    callback_list = [K.callbacks.EarlyStopping(patience=50, verbose=1, restore_best_weights=1), print_every_N_epochs(25)]
     # TODO L3.E2.6 Tune the maximum number of iterations and desired error
     # TODO L3.E2.2 L3.E2.3
     NNmodel.fit(training_data, training_target, batch_size=len(data), verbose=1,
@@ -306,7 +305,7 @@ def full_nn(n_hiddenlayers, n_neurons, train_data, train_classes, test1, title, 
     Calcule le taux d'erreur moyen pour test2 le cas échéant
     Produit un graphique des résultats pour test1 et test2 le cas échéant
     """
-    predictions, predictions2 = nn_classify(n_hiddenlayers, n_neurons, train_data, train_classes, test1, test2)
+    predictions, predictions2 = nn_classify(n_hiddenlayers, n_neurons, train_data, train_classes.ravel(), test1, test2)
     predictions = predictions.reshape(len(test1), 1)
 
     error_class = 6  # optionnel, assignation d'une classe différente à toutes les données en erreur, aide pour la visualisation

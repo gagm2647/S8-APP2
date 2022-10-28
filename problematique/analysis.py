@@ -147,8 +147,8 @@ def view_classes(data, extent, border_coeffs=None):
     colorpoints = ['orange', 'purple', 'black']
     colorfeatures = ['red', 'green', 'blue']
 
-    for i in range(dims[1]):
-        tempdata = data[:,i]
+    for i in range(dims[0]):
+        tempdata = data[i]
         m, cov, valpr, vectprop = calcModeleGaussien(tempdata)
         ax1.scatter(tempdata[:, 0], tempdata[:, 1], s=5, c=colorpoints[i])
         ax1.scatter(m[0], m[1], c=colorfeatures[i])
@@ -199,7 +199,7 @@ def view_classification_results(train_data, test1, c1, c2, glob_title, title1, t
     cmap = cm.get_cmap('seismic')
     if np.asarray(test2).any():
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1)
-        ax3.scatter(test2[:,2], test2[:,2], s=5, c=cmap(c3))
+        ax3.scatter(test2[:, 0], test2[:, 1], s=5, c=cmap(c3))
         ax3.set_title(title3)
         # ax3.set_xlim([extent.xmin, extent.xmax])
         # ax3.set_ylim([extent.ymin, extent.ymax])
@@ -207,8 +207,8 @@ def view_classification_results(train_data, test1, c1, c2, glob_title, title1, t
     else:
         fig, (ax1, ax2) = plt.subplots(2, 1)
     fig.suptitle(glob_title)
-    ax1.scatter(train_data[:,0], train_data[:,0], s=5, c=c1, cmap='viridis')
-    ax2.scatter(test1[:,1], test1[:,1], s=5, c=c2, cmap='viridis')
+    ax1.scatter(train_data[:, 0], train_data[:, 1], s=5, c=c1, cmap='viridis')
+    ax2.scatter(test1[:, 0], test1[:, 1], s=5, c=c2, cmap='viridis')
     ax1.set_title(title1)
     ax2.set_title(title2)
     # ax1.set_xlim([extent.xmin, extent.xmax])
@@ -338,8 +338,8 @@ def calcModeleGaussien(data, message=''):
     """
     # TODO L1.E2.2 Remplacer les valeurs bidons avec les fonctions appropriées ici
 
-    moyenne = [np.mean(data)]
-    matr_cov = np.cov(data)
+    moyenne = np.round([np.mean(data[:,0]), np.mean(data[:,1])])
+    matr_cov = np.round(np.cov(data[:,0], data[:,1]))
     val_propres, vect_propres = np.linalg.eigh(matr_cov)
     
     if message:
@@ -357,7 +357,7 @@ def decorrelate(data, basis):
     """
     dims = np.asarray(data).shape
     decorrelated = np.zeros(np.asarray(data).shape)
-    for i in range(dims[1]):
+    for i in range(dims[0]):
         # TODO L1.E2.5 Remplacer l'opération bidon par la bonne projection ici
         tempdata = np.matmul(basis, data[i].T)
         decorrelated[i] = tempdata.T

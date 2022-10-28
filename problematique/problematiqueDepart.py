@@ -142,23 +142,7 @@ def main():
     coasts_labels = labels[np.where(labels==0)][:length]
     forests_labels = labels[np.where(labels==1)][:length]
     streets_labels = labels[np.where(labels==2)][:length]
-    
-    # features = np.array([coasts_features, forests_features, streets_features]).reshape(-1)
-    features = np.zeros((len(coasts_features)+len(forests_features)+len(streets_features),3))
-    i = 0
-    for c in coasts_features:
-        features[i] = c
-        i += 1
-    for f in forests_features:
-        features[i] = f
-        i+=1
-    for s in streets_features:
-        features[i] = s
-        i+=1
-    
-    
-    features = features / np.max(features)
-    labels = np.array([coasts_labels, forests_labels, streets_labels]).reshape(-1)
+
     donneesTest = []
 
     if False:
@@ -175,6 +159,21 @@ def main():
         ret = 1
 
     if True:
+        features = np.zeros((len(coasts_features)+len(forests_features)+len(streets_features),3))
+        i = 0
+        for c in coasts_features:
+            features[i] = c
+            i += 1
+        for f in forests_features:
+            features[i] = f
+            i+=1
+        for s in streets_features:
+            features[i] = s
+            i+=1
+        
+        
+        features = features / np.max(features)
+        labels = np.array([coasts_labels, forests_labels, streets_labels]).reshape(-1)
         # TODO Classifier NN
         n_hidden_layers = 5
         n_neurons = 15
