@@ -147,8 +147,8 @@ def view_classes(data, extent, border_coeffs=None):
     colorpoints = ['orange', 'purple', 'black']
     colorfeatures = ['red', 'green', 'blue']
 
-    for i in range(dims[1]):
-        tempdata = data[:,i]
+    for i in range(dims[0]):
+        tempdata = data[i]
         m, cov, valpr, vectprop = calcModeleGaussien(tempdata)
         ax1.scatter(tempdata[:, 0], tempdata[:, 1], s=5, c=colorpoints[i])
         ax1.scatter(m[0], m[1], c=colorfeatures[i])
@@ -199,22 +199,22 @@ def view_classification_results(train_data, test1, c1, c2, glob_title, title1, t
     cmap = cm.get_cmap('seismic')
     if np.asarray(test2).any():
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1)
-        ax3.scatter(test2[:,2], test2[:,2], s=5, c=cmap(c3))
+        ax3.scatter(test2[:, 0], test2[:, 1], s=5, c=cmap(c3))
         ax3.set_title(title3)
-        # ax3.set_xlim([extent.xmin, extent.xmax])
-        # ax3.set_ylim([extent.ymin, extent.ymax])
+        ax3.set_xlim([extent.xmin, extent.xmax])
+        ax3.set_ylim([extent.ymin, extent.ymax])
         ax3.axes.set_aspect('equal')
     else:
         fig, (ax1, ax2) = plt.subplots(2, 1)
     fig.suptitle(glob_title)
-    ax1.scatter(train_data[:,0], train_data[:,0], s=5, c=c1, cmap='viridis')
-    ax2.scatter(test1[:,1], test1[:,1], s=5, c=c2, cmap='viridis')
+    ax1.scatter(train_data[:, 0], train_data[:, 1], s=5, c=c1, cmap='viridis')
+    ax2.scatter(test1[:, 0], test1[:, 1], s=5, c=c2, cmap='viridis')
     ax1.set_title(title1)
     ax2.set_title(title2)
-    # ax1.set_xlim([extent.xmin, extent.xmax])
-    # ax1.set_ylim([extent.ymin, extent.ymax])
-    # ax2.set_xlim([extent.xmin, extent.xmax])
-    # ax2.set_ylim([extent.ymin, extent.ymax])
+    ax1.set_xlim([extent.xmin, extent.xmax])
+    ax1.set_ylim([extent.ymin, extent.ymax])
+    ax2.set_xlim([extent.xmin, extent.xmax])
+    ax2.set_ylim([extent.ymin, extent.ymax])
     ax1.axes.set_aspect('equal')
     ax2.axes.set_aspect('equal')
 
@@ -338,7 +338,7 @@ def calcModeleGaussien(data, message=''):
     """
     # TODO L1.E2.2 Remplacer les valeurs bidons avec les fonctions appropriées ici
 
-    moyenne = [np.mean(data)]
+    moyenne = np.mean(data, axis=0)
     matr_cov = np.cov(data)
     val_propres, vect_propres = np.linalg.eigh(matr_cov)
     
@@ -357,17 +357,19 @@ def decorrelate(data, basis):
     """
     dims = np.asarray(data).shape
     decorrelated = np.zeros(np.asarray(data).shape)
-    for i in range(dims[1]):
+    for i in range(dims[0]):
         # TODO L1.E2.5 Remplacer l'opération bidon par la bonne projection ici
         tempdata = np.matmul(basis, data[i].T)
         decorrelated[i] = tempdata.T
     return decorrelated
 
 
-def genDonneesTest(ndonnees, extent):
-    # génération de n données aléatoires 2D sur une plage couverte par extent
-    return np.transpose(np.array([(extent.xmax - extent.xmin) * np.random.random(ndonnees) + extent.xmin,
-                                         (extent.ymax - extent.ymin) * np.random.random(ndonnees) + extent.ymin]))
+def genDonneesTest(ndonnees, extent, ndim):
+    # génération de n données aléatoires nD sur une plage couverte par extent
+    data = np.zeros((ndonnees, ndim))
+    for dim in range(ndim):
+        data[:, dim] = np.array((extent.xmax - extent.xmin) * np.random.random(ndonnees) + extent.xmin)
+    return data 
 
 
 # usage: OUT = scale_data(IN, MINMAX)

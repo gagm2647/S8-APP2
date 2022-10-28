@@ -15,6 +15,7 @@ import os
 import cv2 as cv
 
 import classifiers
+import analysis as an
 
 #######################################
 
@@ -161,26 +162,29 @@ def main():
     labels = np.array([coasts_labels, forests_labels, streets_labels]).reshape(-1)
     donneesTest = []
 
-    if False:
+    if True:
+        x = [coasts_features, forests_features, streets_features] / np.max(features)
+        ndonnees = 5000
+        min, max = np.min(features), np.max(features)
+        donneesTest = an.genDonneesTest(ndonnees, an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), ndim=3)
         # TODO Classifier Bayesien
-        ret = 0
         # classification
         # Bayes
         #                           (train_data, train_classes, donnee_test, title, extent, test_data, test_classes)
-        classifiers.full_Bayes_risk(features, labels, donneesTest,
-                                    'Bayes risque #1', [np.min(features), np.max(features)], donneesTest, labels)
+        classifiers.full_Bayes_risk(x, labels, donneesTest,
+                                    'Bayes risque #1', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
 
     if False:
         # TODO Classifier K-Mean
         ret = 1
 
-    if True:
+    if False:
         # TODO Classifier NN
         n_hidden_layers = 5
         n_neurons = 15
         classifiers.full_nn(n_hidden_layers, n_neurons, features, labels, features,
                 f'NN {n_hidden_layers} layer(s) caché(s), {n_neurons} neurones par couche', [], features, labels)
-        plt.show()
+    plt.show()
 
 
 ######################################
