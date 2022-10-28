@@ -364,10 +364,13 @@ def decorrelate(data, basis):
     return decorrelated
 
 
-def genDonneesTest(ndonnees, extent):
-    # génération de n données aléatoires 2D sur une plage couverte par extent
-    return np.transpose(np.array([(extent.xmax - extent.xmin) * np.random.random(ndonnees) + extent.xmin,
-                                         (extent.ymax - extent.ymin) * np.random.random(ndonnees) + extent.ymin]))
+def genDonneesTest(ndonnees, extent, ndim):
+    # génération de n données aléatoires nD sur une plage couverte par extent
+    data = np.zeros((ndonnees, ndim))
+    for dim in range(ndim):
+        data[:, dim] = np.array((extent.xmax - extent.xmin) * np.random.random(ndonnees) + extent.xmin)
+    return data
+
 
 
 # usage: OUT = scale_data(IN, MINMAX)
