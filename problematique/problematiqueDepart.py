@@ -131,7 +131,7 @@ def main():
     dataset_32x32_path = './problematique/test/small'
 
     images, labels, filesizes = load_images(
-        dataset_32x32_path, size=32, normalize=False, random=False)
+        dataset_path, size=256, normalize=False, random=False)
 
     features = image_anal.main(images, labels)[0]
 
@@ -158,7 +158,7 @@ def main():
         i+=1
         
         
-    features = features / np.max(features)
+    features = features #/ np.max(features)
     labels = np.array([coasts_labels, forests_labels, streets_labels]).reshape(-1)
 
     ndonnees = 5000
@@ -166,7 +166,7 @@ def main():
     donneesTest = an.genDonneesTest(ndonnees, an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), ndim=3)
 
     if True:
-        x = [coasts_features, forests_features, streets_features] / np.max(features)
+        x = [coasts_features, forests_features, streets_features] #/ np.max(features)
         
         # TODO Classifier Bayesien
         # classification
@@ -174,7 +174,9 @@ def main():
         #                           (train_data, train_classes, donnee_test, title, extent, test_data, test_classes)
         classifiers.full_Bayes_risk(x, labels, donneesTest,
                                     'Bayes risque #1', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
-
+        # #                           (train_data, train_classes, donnee_test, title, extent, test_data, test_classes)
+        # classifiers.full_Bayes_risk(allClasses, TroisClasses.class_labels, donneesTest, 
+        #                             'Bayes risque #1', TroisClasses.extent, TroisClasses.data, TroisClasses.class_labels)
     if False:
         # TODO Classifier K-Mean
         ret = 1
