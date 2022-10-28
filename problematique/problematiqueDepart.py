@@ -128,7 +128,7 @@ def main():
     dataset_32x32_path = './problematique/test/small'
 
     images, labels, filesizes = load_images(
-        dataset_32x32_path, size=32, normalize=False, random=False)
+        dataset_path, size=256, normalize=False, random=False)
 
     features = image_anal.main(images, labels)[0]
     
@@ -142,7 +142,7 @@ def main():
     streets_labels = labels[np.where(labels==2)][:length]
 
     features = np.zeros((len(coasts_features)+len(forests_features)+len(streets_features),3))
-
+    
     i = 0
     for c in coasts_features:
         features[i] = c
@@ -161,8 +161,8 @@ def main():
     min, max = np.min(features), np.max(features)
     donneesTest = an.genDonneesTest(ndonnees, an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), ndim=3)
 
-    if False:
-        x = [coasts_features, forests_features, streets_features] / np.max(features)
+    if True:
+        x = [coasts_features, forests_features, streets_features] #/ np.max(features)
         
         # TODO Classifier Bayesien
         # classification
@@ -171,7 +171,7 @@ def main():
         classifiers.full_Bayes_risk(x, labels, donneesTest,
                                     'Bayes risque #1', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
 
-    if True:
+    if False:
 
         data = [coasts_features, forests_features, streets_features]
 

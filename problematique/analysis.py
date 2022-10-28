@@ -339,7 +339,7 @@ def calcModeleGaussien(data, message=''):
     # TODO L1.E2.2 Remplacer les valeurs bidons avec les fonctions appropriées ici
 
     moyenne = np.mean(data, axis=0)
-    matr_cov = np.cov(data)
+    matr_cov = np.cov(data, rowvar=False)
     val_propres, vect_propres = np.linalg.eigh(matr_cov)
     
     if message:
