@@ -157,15 +157,13 @@ def main():
         features[i] = s
         i+=1
         
-        
-    features = features / np.max(features)
     labels = np.array([coasts_labels, forests_labels, streets_labels]).reshape(-1)
 
-    ndonnees = 5000
+    ndonnees = 15000
     min, max = np.min(features), np.max(features)
     donneesTest = an.genDonneesTest(ndonnees, an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), ndim=3)
 
-    if True:
+    if False:
         x = [coasts_features, forests_features, streets_features] / np.max(features)
         
         # TODO Classifier Bayesien
@@ -179,12 +177,12 @@ def main():
         # TODO Classifier K-Mean
         ret = 1
 
-    if False:
+    if True:
         # TODO Classifier NN
         n_hidden_layers = 5
         n_neurons = 15
-        classifiers.full_nn(n_hidden_layers, n_neurons, features, labels, features,
-                f'NN {n_hidden_layers} layer(s) caché(s), {n_neurons} neurones par couche', [], features, labels)
+        classifiers.full_nn(n_hidden_layers, n_neurons, features, labels, donneesTest,
+                f'NN {n_hidden_layers} layer(s) caché(s), {n_neurons} neurones par couche', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
     plt.show()
 
 
