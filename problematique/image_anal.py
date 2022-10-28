@@ -1,3 +1,5 @@
+import enum
+from turtle import color
 
 # user imports
 import cv2 as cv
@@ -76,16 +78,17 @@ def view_entropy(entropy_list):
 #   Color histograms
 #######################################
 def extract_color_histogram(images, labels):
-    color_list = [[], [], []]   # Coast, Forest, Street | intensity bins
+    color_list = [[], [], []]   # Coast, Forest, Street | RGB intensity bins
     n_bins = 256
     for idx, img in enumerate(images):
+        img = np.round(img * 256)
         # Color bining
         color = np.zeros((3, n_bins))
         for i in range(n_bins):
             for j in range(3):
                 color[j, i] = np.count_nonzero(img[:, :, j] == i)
 
-        # Labeling
+        # Labeling Coast, Forest, Street
         if labels[idx] == 0:
             color_list[0].append(color)
         if labels[idx] == 1:
@@ -98,37 +101,55 @@ def extract_color_histogram(images, labels):
 
 def extract_integral_fft(img: np.array, skip: int, nbins: int):
     ffts = img[:, skip:-skip]
-    integrals = np.zeros(len(img))
+    integrals = np.zeros(3)
     fftxaxis = range(nbins)[skip:-skip]
-    for i in range(len(img)):
-        ffts[i] = np.abs(np.fft.fftshift(np.fft.fft(img[i])[skip:-skip]))
-        integrals[i] = np.trapz(ffts[i], x=[fftxaxis])
+    for i in range(3):
+        #ffts[i] = np.abs(np.fft.fftshift(np.fft.fft(img[i])[skip:-skip]))
+        integrals[i] = np.sum(img[i, :])
     return ffts, integrals
 
 
 def view_colors(color_list, n_bins, labels: np.array):
-    integrals = np.zeros((3, 3))
-    stds = np.zeros((3, 3))
-    skip = 15
-    ffts = []
-    integrals = []
-    for i in range(3):
-        color = np.zeros((3, n_bins))
-        fftxaxis = range(n_bins)[skip:-skip]
+    coast_integrals  = np.zeros((len(color_list[0]), 3))
+    forest_integrals = np.zeros((len(color_list[1]), 3))
+    street_integrals = np.zeros((len(color_list[2]), 3))
+    integrals = np.array([coast_integrals, forest_integrals, street_integrals])
+    
+    for i, classe in enumerate(color_list):
+        for j, img in enumerate(classe):
+            integral_r = np.sum(img[0, :] / np.max(img[0, :]))
+            integral_g = np.sum(img[1, :] / np.max(img[1, :]))
+            integral_b = np.sum(img[2, :] / np.max(img[2, :]))
+            integrals[i][j] = np.array([integral_r, integral_g, integral_b])
 
-        for k, img in enumerate(color_list[i]):
-            color = np.add(color, img)
-            fft, integral = extract_integral_fft(img, skip, n_bins)
-            ffts.append(fft)
-            integrals.append(integral)
+
+    print('pouet')
+
+    # integrals = np.zeros((3, 3))
+    # stds = np.zeros((3, 3))
+    # skip = 15
+    # ffts = []
+    # integrals = []
+    # for i in range(3):
+    #     color = np.zeros((3, n_bins))
+    #     fftxaxis = range(n_bins)[skip:-skip]
+
+    #     for k, img in enumerate(color_list[i]):
+    #         color = np.add(color, img)
+            
+    #         fft, integral = extract_integral_fft(img, skip, n_bins)
+    #         ffts.append(fft)
+            # integrals.append(integral)
             # plt.figure(k)
             # plt.scatter(fftxaxis, ffts[0], c='blue')
             # plt.scatter(fftxaxis, ffts[1], c='green')
             # plt.scatter(fftxaxis, ffts[2], c='red')
             # plt.title(f"{k}th img fft")
         # plt.show()
-        color = color / len(color_list[i])
-
+        # color = color / len(color_list[i])
+        # color[0] = color[0]/max(color[0])
+        # color[1] = color[1]/max(color[1])
+        # color[2] = color[2]/max(color[2])
         # colors = color[:, skip:-skip]
         # ffts = np.zeros(colors.shape)
         # for j in range(len(ffts)):
@@ -138,48 +159,43 @@ def view_colors(color_list, n_bins, labels: np.array):
 
         # compute integral of blue channel
 
-        plt.figure(i)
-        plt.scatter(range(n_bins), color[0]/max(color[0]), c='blue')
-        plt.scatter(range(n_bins), color[1]/max(color[1]), c='green')
-        plt.scatter(range(n_bins), color[2]/max(color[2]), c='red')
+        # plt.figure(i)
+        # plt.scatter(range(n_bins), color[0], c='blue')
+        # plt.scatter(range(n_bins), color[1], c='green')
+        # plt.scatter(range(n_bins), color[2], c='red')
         # plt.title('Color Range')
         # plt.figure(i+3)
         # plt.scatter(fftxaxis, ffts[0] / max(ffts[0]), c='blue')
         # plt.scatter(fftxaxis, ffts[1] / max(ffts[1]), c='green')
         # plt.scatter(fftxaxis, ffts[2] / max(ffts[2]), c='red')
         # plt.title('FFTs')
-    ffts = np.array(ffts)
-    integrals = np.array(integrals)
-    coasts_fft = ffts[np.where(labels == 0)]
-    coasts_fft_mean = np.mean(coasts_fft, axis=0)
-    coasts_fft_std = np.std(coasts_fft, axis=0)
-    coasts_integrals = integrals[np.where(labels == 0)]
-    coasts_integrals_mean = np.mean(coasts_integrals, axis=0)
-    coasts_integrals_std = np.std(coasts_integrals, axis=0)
-    forests_fft = ffts[np.where(labels == 1)]
-    forests_fft_mean = np.mean(forests_fft, axis=0)
-    forests_fft_std = np.std(forests_fft, axis=0)
-    forests_integrals = integrals[np.where(labels == 1)]
-    forests_integrals_mean = np.mean(forests_integrals, axis=0)
-    forests_integrals_std = np.std(forests_integrals, axis=0)
-    streets_fft = ffts[np.where(labels == 2)]
-    streets_fft_mean = np.mean(streets_fft, axis=0)
-    streets_fft_std = np.std(streets_fft, axis=0)
-    streets_integrals = integrals[np.where(labels == 2)]
-    streets_integrals_mean = np.mean(streets_integrals, axis=0)
-    streets_integrals_std = np.std(streets_integrals, axis=0)
+    integrals_stats = np.zeros((3, 3, 2))
+    for idx, classe in enumerate(integrals):
+        for c_channel in range(3):
+            mean = np.mean(classe[:, c_channel])
+            std  = np.std(classe[:, c_channel])
+            integrals_stats[idx, c_channel] = np.array(mean, std)
+
+    coasts_integrals_mean = integrals_stats[0, :, 0]
+    coasts_integrals_std = integrals_stats[0, :, 1]
+    forests_integrals_mean = integrals_stats[1, :, 0]
+    forests_integrals_std = integrals_stats[1, :, 1]
+    streets_integrals_mean = integrals_stats[2, :, 0]
+    streets_integrals_std = integrals_stats[2, :, 1]
 
     data = {
         "Coasts": coasts_integrals_mean,
         "Forests": forests_integrals_mean,
         "Streets": streets_integrals_mean
     }
-
+    print(coasts_integrals_mean, forests_integrals_mean, streets_integrals_mean)
+    print(coasts_integrals_std, forests_integrals_std, streets_integrals_std)
     fig, ax = plt.subplots()
     bar_plot(ax, data, total_width=0.8, single_width=0.9,
              xbar=['R', 'G', 'B'], stache=[coasts_integrals_std, forests_integrals_std, streets_integrals_std])
 
     plt.show()
+    print('pouet')
 
 #######################################
 #   simple stats
@@ -359,8 +375,8 @@ def normalize_intensity(img: np.array):
     img = copy.deepcopy(img)
     for i in range(img.shape[0]):
         for j in range(img.shape[1]):
-            R_G_B = np.sum(img[i][j]) + 10**-15
-            img[i][j] = img[i][j] / R_G_B
+            R_G_B = np.sum(img[i][j])
+            img[i][j] = img[i][j] / R_G_B if R_G_B > 0 else np.zeros(3)
     return img
 
 
@@ -379,8 +395,9 @@ def normalize_illumination(img: np.array):
     img = copy.deepcopy(img)
     N = img.shape[0]
     for color in range(img.shape[2]):
-        intensity = 3/(N*N) * np.sum(img[:][:][color])
-        img[:][:][color] = img[:][:][color] / intensity
+        intensity = 3/(N*N) * np.sum(img[:, :, color])
+        img[:, :, color] = img[:, :, color] / intensity
+    
 
     return img
 
@@ -399,7 +416,7 @@ def normalize_illumination(img: np.array):
 
 def comprehensive_color_normalize(img: np.array, display: bool = False):
     difference = 1
-    threshold = 10**-12
+    threshold = 10**-19
     prev_img = copy.deepcopy(img)
     prev_img = prev_img.astype('float64')
     while difference > threshold:
@@ -820,7 +837,7 @@ def merge_mean_color(graph, src, dst):
 def main(images: np.array, labels: np.array):
     features = []
     # features
-    if True:
+    if False:
         x = rag_merging(images)
         canny = extract_high_freq_entropy(
             x, labels, sigma=1, display=True)
@@ -835,7 +852,7 @@ def main(images: np.array, labels: np.array):
         canny = extract_high_freq_entropy(
             images, labels, sigma=1, display=True)
         features.append(canny)
-    if False:
+    if True:
         color_hist = extract_color_histogram(images, labels)
         features.append(color_hist)
     if False:
