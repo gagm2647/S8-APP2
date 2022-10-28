@@ -837,6 +837,14 @@ def merge_mean_color(graph, src, dst):
 def main(images: np.array, labels: np.array):
     features = []
     # features
+    if True:
+        means = np.zeros((len(images),3))
+        for idx, img in enumerate(images):
+            means[idx, 0] = np.mean(img[:,:,0])
+            means[idx, 1] = np.mean(img[:,:,1])
+            means[idx, 2] = np.mean(img[:,:,2])
+            
+        features.append(means)
     if False:
         x = rag_merging(images)
         canny = extract_high_freq_entropy(
@@ -852,7 +860,7 @@ def main(images: np.array, labels: np.array):
         canny = extract_high_freq_entropy(
             images, labels, sigma=1, display=True)
         features.append(canny)
-    if True:
+    if False:
         color_hist = extract_color_histogram(images, labels)
         features.append(color_hist)
     if False:

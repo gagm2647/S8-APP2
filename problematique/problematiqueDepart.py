@@ -130,11 +130,11 @@ def main():
     dataset_32x32_path = './problematique/test/small'
 
     images, labels, filesizes = load_images(
-        dataset_32x32_path, size=32, normalize=False, random=True)
+        dataset_32x32_path, size=32, normalize=False, random=False)
 
     features = image_anal.main(images, labels)[0]
 
-    length = 50
+    length = 290
     
     coasts_features = features[np.where(labels == 0)][:length]
     forests_features = features[np.where(labels == 1)][:length]
@@ -143,10 +143,23 @@ def main():
     forests_labels = labels[np.where(labels==1)][:length]
     streets_labels = labels[np.where(labels==2)][:length]
     
-    features = np.array([coasts_features, forests_features, streets_features])
-    labels = np.array([coasts_labels, forests_labels, streets_labels])
+    # features = np.array([coasts_features, forests_features, streets_features]).reshape(-1)
+    features = np.zeros((len(coasts_features)+len(forests_features)+len(streets_features),3))
+    i = 0
+    for c in coasts_features:
+        features[i] = c
+        i += 1
+    for f in forests_features:
+        features[i] = f
+        i+=1
+    for s in streets_features:
+        features[i] = s
+        i+=1
+    
+    
+    features = features / np.max(features)
+    labels = np.array([coasts_labels, forests_labels, streets_labels]).reshape(-1)
     donneesTest = []
-    labels = []
 
     if False:
         # TODO Classifier Bayesien
@@ -163,12 +176,11 @@ def main():
 
     if True:
         # TODO Classifier NN
-        ret = 2
-        n_hidden_layers = 3
-        n_neurons = 5
-        classifiers.full_nn(n_hidden_layers, n_neurons, features, labels, donneesTest,
-                f'NN {n_hidden_layers} layer(s) caché(s), {n_neurons} neurones par couche', TroisClasses.extent, features, labels)
-
+        n_hidden_layers = 5
+        n_neurons = 15
+        classifiers.full_nn(n_hidden_layers, n_neurons, features, labels, features,
+                f'NN {n_hidden_layers} layer(s) caché(s), {n_neurons} neurones par couche', [], features, labels)
+        plt.show()
 
 
 ######################################
