@@ -936,6 +936,7 @@ def colors_std(image):
 
 def main(images: np.array, labels: np.array):
     features = []
+    feature_names = []
     # features
 
     if True:
@@ -957,6 +958,7 @@ def main(images: np.array, labels: np.array):
             means[idx, 4] = np.mean(blur[:, :, 2])
             
         features.append(means)
+        feature_names.extend(['Median of red', 'Median of green', 'Median of blue', 'Mean blur of green', 'Mean blur of blue'])
     if False:
         x = rag_merging(images)
         canny = extract_high_freq_entropy(
@@ -969,6 +971,7 @@ def main(images: np.array, labels: np.array):
             images, labels)
         temp = np.concatenate((features[0], np.expand_dims(canny, axis=1)), axis=1)
         features = [temp]
+        feature_names.append('Entropy of canny')
     if False:
         canny = extract_high_freq_entropy(
             images, labels, sigma=1, display=True)
@@ -1015,7 +1018,7 @@ def main(images: np.array, labels: np.array):
 
         temp = np.append(features[0], colors_diff, axis=1)
         features = [temp]
-
+        feature_names.extend(['Color diff. G vs B', 'Color diff. G vs R', 'Color diff. B vs R'])
         if False:
             fig, (ax1, ax2, ax3) = plt.subplots(3, 1)
             coasts_ffts = z[np.where(labels == 0)]
@@ -1034,7 +1037,7 @@ def main(images: np.array, labels: np.array):
     # Correlation
     if False:
         correlate2d(np.array(features))
-    return np.array(features)
+    return np.array(features), feature_names
 
 
 ######################################

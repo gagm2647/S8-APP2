@@ -188,14 +188,15 @@ def nn_classify(n_hidden_layers, n_neurons, train_data, classes, test1, test2=No
     # Define training parameters
     # TODO L3.E2.6 Tune the training parameters
     # TODO L3.E2.1
-    NNmodel.compile(optimizer=Adam(learning_rate=0.001), loss=losses.SparseCategoricalCrossentropy(), metrics=['accuracy'])
+    NNmodel.compile(optimizer=Adam(learning_rate=0.0015), loss=losses.SparseCategoricalCrossentropy(), metrics=['accuracy'])
 
     # Perform training
     # TODO L3.E2.4
     callback_list = [K.callbacks.EarlyStopping(patience=250, verbose=1, restore_best_weights=1), print_every_N_epochs(25)]
     # TODO L3.E2.6 Tune the maximum number of iterations and desired error
     # TODO L3.E2.2 L3.E2.3
-    NNmodel.fit(training_data, training_target, batch_size=len(data), verbose=1, epochs=25000, shuffle=True, callbacks=callback_list,
+    batch=len(data)
+    NNmodel.fit(training_data, training_target, batch_size=64, verbose=1, epochs=25000, shuffle=True, callbacks=callback_list,
                 validation_data=(validation_data, validation_target))
 
     # Save trained model to disk

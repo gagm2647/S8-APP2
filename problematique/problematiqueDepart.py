@@ -17,6 +17,9 @@ import copy
 
 import classifiers
 import analysis as an
+import pandas as pd
+import seaborn as sns
+
 
 def start_main():
     # Génère une liste de N images, les visualise et affiche leur histo de couleur
@@ -203,9 +206,21 @@ def main():
     images, labels, filesizes = load_images(
         dataset_32x32_path, size=32, normalize=False, random=False)
 
-    features = image_anal.main(images, labels)[0]
+    features, feature_names = image_anal.main(images, labels)
+    features = features[0] #lol sorry
     length = 290
-    
+
+    dataframe = pd.DataFrame(features, columns=feature_names)
+
+    # Increase the size of the heatmap.
+    plt.figure(figsize=(16, 6))
+    # Store heatmap object in a variable to easily access it when you want to include more features (such as title).
+    # Set the range of values to be displayed on the colormap from -1 to 1, and set the annotation to True to display the correlation values on the heatmap.
+    heatmap = sns.heatmap(dataframe.corr(), vmin=-1, vmax=1, annot=True)
+    # Give a title to the heatmap. Pad defines the distance of the title from the top of the heatmap.
+    heatmap.set_title('Correlation Heatmap', fontdict={'fontsize': 12}, pad=12);
+    plt.savefig('heatmap.png', dpi=300, bbox_inches='tight')
+
     coasts_features = features[np.where(labels == 0)][:length]
     forests_features = features[np.where(labels == 1)][:length]
     streets_features = features[np.where(labels == 2)][:length]
@@ -232,7 +247,7 @@ def main():
     min, max = np.min(features), np.max(features)
     donneesTest = an.genDonneesTest(ndonnees, an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), ndim=features.shape[1])
 
-    if False:
+    if True:
         x = [coasts_features, forests_features, streets_features] #/ np.max(features)
         
         # TODO Classifier Bayesien
@@ -258,7 +273,7 @@ def main():
         cluster_centers, cluster_labels = classifiers.full_kmean(25, data, labels, 'kmean', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max))
         classifiers.full_ppv(25, cluster_centers, cluster_labels, donneesTest, '5v5', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
 
-    if False:
+    if True:
         features = np.zeros((len(coasts_features)+len(forests_features)+len(streets_features),features.shape[1]))
         i = 0
         for c in coasts_features:
