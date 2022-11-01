@@ -222,7 +222,7 @@ def extract_simple_stats(images, labels):
 #######################################
 def extract_skimage_features(images: np.array, labels: np.array, display: bool = False):
     for idx, img in enumerate(images):
-
+        img = img.astype('uint8')
         gray_img = skimage.color.rgb2gray(img)
         # edge filter
         canny_img = skimage.feature.canny(gray_img)
@@ -262,7 +262,9 @@ def extract_daisy_features(images: np.array, labels: np.array, display: bool = F
         gray_img = skimage.color.rgb2gray(img)
         canny_img = skimage.feature.canny(gray_img, sigma=1)
         # entropy
+        canny_img = canny_img.astype('uint8')
         entropy = skimage.measure.shannon_entropy(canny_img)
+        entropy1 = skimage.filters.rank.entropy(canny_img, skimage.morphology.disk(10))
         daisy_values[idx] = entropy
 
     if display:
@@ -920,9 +922,9 @@ def colors_std(image):
             elif (image[i, j, 2] > image[i, j, 0] and image[i, j, 2] > image[i, j, 1]):
                 nb_blue = nb_blue + 1
 
-    #nb_blue = np.count_nonzero(image[:, :len(image)//4, 0] > 99)
-    #nb_green = np.count_nonzero(image[:, :len(image)//4, 1] > 99)
-    #nb_red = np.count_nonzero(image[:, :len(image)//4, 2] > 99)
+    #nb_blue = np.sum(image[:, :, 2])
+    #nb_green = np.sum(image[:, :, 1])
+    ##nb_red = np.sum(image[:, :, 0])
 
     return np.array([(nb_green - nb_blue), (nb_green - nb_red), (nb_blue - nb_red), (nb_blue + nb_green + nb_red)])
     #return np.array([nb_blue, nb_green, nb_red])
@@ -937,21 +939,22 @@ def main(images: np.array, labels: np.array):
     # features
 
     if True:
-        means = np.zeros((len(images),6))
+        means = np.zeros((len(images),5))
         for idx, img in enumerate(images):
             img = img.astype('uint8')
             means[idx, 0] = np.median(img[:,:,0])
             means[idx, 1] = np.median(img[:,:,1])
             means[idx, 2] = np.median(img[:,:,2])
+            #img = cv.cvtColor(img, cv.COLOR_RGB2GRAY)
             blur = cv.GaussianBlur(img, (17,17), 1)
             #plt.subplot(121), plt.imshow(img), plt.title('Original')
             #plt.xticks([]), plt.yticks([])
             #plt.subplot(122), plt.imshow(blur), plt.title('Blurred')
             #plt.xticks([]), plt.yticks([])
             #plt.show()
-            means[idx, 3] = np.mean(blur[:, :, 0])
-            means[idx, 4] = np.mean(blur[:, :, 1])
-            means[idx, 5] = np.mean(blur[:, :, 2])
+            #means[idx, 3] = np.mean(blur[:, :, 0])
+            means[idx, 3] = np.mean(blur[:, :, 1])
+            means[idx, 4] = np.mean(blur[:, :, 2])
             
         features.append(means)
     if False:
@@ -961,13 +964,15 @@ def main(images: np.array, labels: np.array):
         features.append(canny)
     if False:
         view_filesize(filesizes, labels)
-    if False:
+    if True:
         canny = extract_daisy_features(
-            images, labels, sigma=1, display=True)
-        features.append(canny)
+            images, labels)
+        temp = np.concatenate((features[0], np.expand_dims(canny, axis=1)), axis=1)
+        features = [temp]
     if False:
         canny = extract_high_freq_entropy(
             images, labels, sigma=1, display=True)
+        np_canny = np.zeros(())
         features.append(canny)
     if False:
         x = rag_merging(images)
@@ -977,9 +982,9 @@ def main(images: np.array, labels: np.array):
         simple_stats = extract_simple_stats(images, labels)
         features.append(simple_stats)
     if False:
-        skimage_features = extract_skimage_features(
-            images, labels, display=True)
-        features.append(skimage_features)
+        skimage_features = extract_skimage_features(images, labels, display=False)
+        #temp = np.concatenate((features[0], np.expand_dims(skimage_features, axis=1)), axis=1)
+        #features = [temp]
     if False:
         entropy = extract_entropy(images, labels)
         features.append(entropy)
