@@ -15,6 +15,7 @@ import pandas as pd
 from scipy import stats
 import copy
 from plot import *
+from matplotlib import colors
 
 
 ### Feature list ###
@@ -692,6 +693,41 @@ def extract_noise_level(images: np.array, labels: np.array, display: bool = Fals
         ax.set_title(f'Noise vs. Gray')
         plt.show()
 
+def blob_shits(images: np.array, labels: np.array, display: bool = False):
+    noise = np.zeros(len(labels))
+    gray_imgs = np.zeros(len(labels))
+    mean_img = np.zeros(images.shape)
+    mean_img = np.sum(images, 1)
+    # for idx, img in enumerate(images):
+    #     mean_img = np.add(mean_img, img)
+    mean_img = np.uint8(mean_img // len(labels))
+
+    sift = cv.SIFT_create()
+
+    for idx, img in enumerate(images):
+        gray_img = cv.cvtColor(np.uint8(img), cv.COLOR_RGB2GRAY)
+        gray_imgs[idx] = np.mean(gray_img)
+
+        noise[idx] = cv.PSNR(np.uint8(gray_img), np.uint8(mean_img))
+
+    if display:
+        fig, ax = plt.subplots()
+        coasts_noise = noise[np.where(labels == 0)]
+        forests_noise = noise[np.where(labels == 1)]
+        streets_noise = noise[np.where(labels == 2)]
+
+        coasts_gray = gray_imgs[np.where(labels == 0)]
+        forests_gray = gray_imgs[np.where(labels == 1)]
+        streets_gray = gray_imgs[np.where(labels == 2)]
+
+        ax.scatter(coasts_noise, coasts_gray, label='Coasts')
+        ax.scatter(forests_noise, forests_gray, label='Forests')
+        ax.scatter(streets_noise, streets_gray, label='Streets')
+        ax.legend()
+        ax.set_xlabel(f'Noise level')
+        ax.set_ylabel('Grayscale')
+        ax.set_title(f'Noise vs. Gray')
+        plt.show()
 
 def get_fft(images: np.array, labels: np.array, display: bool = False):
     ffts = np.zeros(images.shape[:-1])
@@ -861,6 +897,37 @@ def filter_hist(images, labels):
 
     return color_int_rel[0, 3], color_int_rel[1, 3], color_int_rel[2, 3]
 
+def colors_std(image):
+    nb_blue = 0
+    nb_green = 0
+    nb_red = 0
+
+    sumRed = 0
+    sumGreen = 0
+    sumBlue = 0
+
+    #for i in range(image.shape[0]//4):
+        #for j in range(image.shape[1]//4):
+            #sumBlue = sumBlue + image[i, j, 0]
+            #sumGreen = sumGreen + image[i, j, 1]
+            #sumRed = sumRed + image[i, j, 2]
+
+    for i in range(image.shape[0]):
+        for j in range(image.shape[1]):
+            if (image[i, j, 0] > image[i, j, 1] and image[i, j, 0] > image[i, j, 2]):
+                nb_red = nb_red + 1
+            elif (image[i, j, 1] > image[i, j, 0] and image[i, j, 1] > image[i, j, 2]):
+                nb_green = nb_green + 1
+            elif (image[i, j, 2] > image[i, j, 0] and image[i, j, 2] > image[i, j, 1]):
+                nb_blue = nb_blue + 1
+
+    #nb_blue = np.count_nonzero(image[:, :len(image)//4, 0] > 99)
+    #nb_green = np.count_nonzero(image[:, :len(image)//4, 1] > 99)
+    #nb_red = np.count_nonzero(image[:, :len(image)//4, 2] > 99)
+
+    return np.array([(nb_green - nb_blue), (nb_green - nb_red), (nb_blue - nb_red), (nb_blue + nb_green + nb_red)])
+    #return np.array([nb_blue, nb_green, nb_red])
+
 #######################################
 #   Main
 #######################################
@@ -870,11 +937,21 @@ def main(images: np.array, labels: np.array):
     features = []
     # features
     if True:
-        means = np.zeros((len(images),3))
+        means = np.zeros((len(images),6))
         for idx, img in enumerate(images):
-            means[idx, 0] = np.mean(img[:,:,0])
-            means[idx, 1] = np.mean(img[:,:,1])
-            means[idx, 2] = np.mean(img[:,:,2])
+            img = img.astype('uint8')
+            means[idx, 0] = np.median(img[:,:,0])
+            means[idx, 1] = np.median(img[:,:,1])
+            means[idx, 2] = np.median(img[:,:,2])
+            blur = cv.GaussianBlur(img, (17,17), 1)
+            #plt.subplot(121), plt.imshow(img), plt.title('Original')
+            #plt.xticks([]), plt.yticks([])
+            #plt.subplot(122), plt.imshow(blur), plt.title('Blurred')
+            #plt.xticks([]), plt.yticks([])
+            #plt.show()
+            means[idx, 3] = np.mean(blur[:, :, 0])
+            means[idx, 4] = np.mean(blur[:, :, 1])
+            means[idx, 5] = np.mean(blur[:, :, 2])
             
         features.append(means)
     if False:
@@ -915,8 +992,38 @@ def main(images: np.array, labels: np.array):
         noise = extract_noise_level(images, labels, True)
     if False:
         fft = get_fft(images, labels, True)
-    if False:
-        col_diff_coast, col_diff_forest, col_diff_street = filter_hist(images, labels)
+    if True:
+        #col_diff_coast, col_diff_forest, col_diff_street = filter_hist(images, labels)
+
+        colors_diff = np.zeros((len(images), 3))
+        z = np.zeros((len(images), 1))
+        for idx, img in enumerate(images):
+            img = comprehensive_color_normalize(img, False)
+            color_d = colors_std(img)
+            colors_diff[idx, 0] = color_d[0]
+            colors_diff[idx, 1] = color_d[1]
+            colors_diff[idx, 2] = color_d[2]
+            z[idx] = np.sum(np.abs(colors_diff[idx, :]))
+
+        colors_diff = np.abs(colors_diff)
+
+        temp = np.append(features[0], colors_diff, axis=1)
+        features = [temp]
+
+        if True:
+            fig, (ax1, ax2, ax3) = plt.subplots(3, 1)
+            coasts_ffts = z[np.where(labels == 0)]
+            forests_ffts = z[np.where(labels == 1)]
+            streets_ffts = z[np.where(labels == 2)]
+
+            ax1.plot(coasts_ffts, label='Coasts')
+            ax2.plot(forests_ffts, label='Forests')
+            ax3.plot(streets_ffts, label='Streets')
+            ax1.legend()
+            ax1.set_xlabel(f'img')
+            ax1.set_ylabel('diff')
+            ax1.set_title(f'Color diffs')
+            plt.show()
 
     # Correlation
     if False:
