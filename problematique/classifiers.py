@@ -174,7 +174,7 @@ def nn_classify(n_hidden_layers, n_neurons, train_data, classes, test1, test2=No
 
     # Crée des ensembles d'entraînement et de validation
     # TODO L3.E2.3
-    training_data, validation_data, training_target, validation_target = ttsplit(data, targets, test_size=0.2)
+    training_data, validation_data, training_target, validation_target = ttsplit(data, targets, test_size=0.2, shuffle=True)
 
     # Create neural network
     # TODO L3.E2.6 Tune the number and size of hidden layers
