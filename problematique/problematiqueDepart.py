@@ -229,7 +229,6 @@ def main():
     labels = np.array([coasts_labels, forests_labels, streets_labels]).reshape(-1)
 
     ndonnees = 15000
-
     min, max = np.min(features), np.max(features)
     donneesTest = an.genDonneesTest(ndonnees, an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), ndim=features.shape[1])
 
@@ -244,13 +243,20 @@ def main():
                                     'Bayes risque #1', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
 
     if True:
+        ndonnees = 15000
+        coasts_features = coasts_features / np.max(coasts_features, axis=0)
+        forests_features = forests_features / np.max(forests_features, axis=0)
+        streets_features = streets_features / np.max(streets_features, axis=0)
+        features = features  / np.max(features, axis=0)
+        min, max = np.min(features), np.max(features)
+        donneesTest = an.genDonneesTest(ndonnees, an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), ndim=features.shape[1])
 
         data = [coasts_features, forests_features, streets_features]
 
         # 1-mean sur chacune des classes
         # suivi d'un 1-PPV avec ces nouveaux représentants de classes
-        cluster_centers, cluster_labels = classifiers.full_kmean(20, data, labels, 'kmean', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max))
-        classifiers.full_ppv(3, cluster_centers, cluster_labels, donneesTest, '5v5', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
+        cluster_centers, cluster_labels = classifiers.full_kmean(25, data, labels, 'kmean', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max))
+        classifiers.full_ppv(25, cluster_centers, cluster_labels, donneesTest, '5v5', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
 
     if False:
         features = np.zeros((len(coasts_features)+len(forests_features)+len(streets_features),features.shape[1]))
