@@ -233,7 +233,7 @@ def main():
     min, max = np.min(features), np.max(features)
     donneesTest = an.genDonneesTest(ndonnees, an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), ndim=features.shape[1])
 
-    if True:
+    if False:
         x = [coasts_features, forests_features, streets_features] #/ np.max(features)
         
         # TODO Classifier Bayesien
@@ -243,16 +243,16 @@ def main():
         classifiers.full_Bayes_risk(x, labels, donneesTest,
                                     'Bayes risque #1', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
 
-    if False:
+    if True:
 
         data = [coasts_features, forests_features, streets_features]
 
         # 1-mean sur chacune des classes
         # suivi d'un 1-PPV avec ces nouveaux représentants de classes
-        cluster_centers, cluster_labels = classifiers.full_kmean(15, data, labels, 'kmean', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max))
-        classifiers.full_ppv(7, cluster_centers, cluster_labels, donneesTest, '5v5', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
+        cluster_centers, cluster_labels = classifiers.full_kmean(20, data, labels, 'kmean', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max))
+        classifiers.full_ppv(3, cluster_centers, cluster_labels, donneesTest, '5v5', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
 
-    if True:
+    if False:
         features = np.zeros((len(coasts_features)+len(forests_features)+len(streets_features),features.shape[1]))
         i = 0
         for c in coasts_features:
@@ -270,7 +270,7 @@ def main():
 
         # TODO Classifier NN
         n_hidden_layers = 5
-        n_neurons = 30
+        n_neurons = 19
         classifiers.full_nn(n_hidden_layers, n_neurons, features, labels, donneesTest,
                 f'NN {n_hidden_layers} layer(s) caché(s), {n_neurons} neurones par couche', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
     plt.show()
