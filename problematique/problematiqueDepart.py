@@ -252,7 +252,7 @@ def main():
         cluster_centers, cluster_labels = classifiers.full_kmean(15, data, labels, 'kmean', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max))
         classifiers.full_ppv(7, cluster_centers, cluster_labels, donneesTest, '5v5', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
 
-    if False:
+    if True:
         features = np.zeros((len(coasts_features)+len(forests_features)+len(streets_features),features.shape[1]))
         i = 0
         for c in coasts_features:
@@ -270,7 +270,7 @@ def main():
 
         # TODO Classifier NN
         n_hidden_layers = 5
-        n_neurons = 15
+        n_neurons = 30
         classifiers.full_nn(n_hidden_layers, n_neurons, features, labels, donneesTest,
                 f'NN {n_hidden_layers} layer(s) caché(s), {n_neurons} neurones par couche', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
     plt.show()

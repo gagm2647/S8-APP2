@@ -1011,7 +1011,7 @@ def main(images: np.array, labels: np.array):
         temp = np.append(features[0], colors_diff, axis=1)
         features = [temp]
 
-        if True:
+        if False:
             fig, (ax1, ax2, ax3) = plt.subplots(3, 1)
             coasts_ffts = z[np.where(labels == 0)]
             forests_ffts = z[np.where(labels == 1)]

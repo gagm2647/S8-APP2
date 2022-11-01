@@ -48,6 +48,7 @@ import keras as K
 from keras.models import Sequential, load_model
 from keras.layers import Dense
 from keras.optimizers import Adam
+from keras.api._v2.keras import losses
 
 import analysis as an
 
@@ -168,34 +169,34 @@ def nn_classify(n_hidden_layers, n_neurons, train_data, classes, test1, test2=No
 
     # Convertit la représentation des étiquettes pour utiliser plus facilement la cross-entropy comme loss
     # TODO L3.E2.1
-    encoder = OneHotEncoder(sparse=False)
-    targets = encoder.fit_transform(classes.reshape(-1, 1))
+    K.layers.CategoryEncoding(output_mode="one_hot", num_tokens=3)
+    targets = classes
 
     # Crée des ensembles d'entraînement et de validation
     # TODO L3.E2.3
-    training_data, validation_data, training_target, validation_target = ttsplit(data, targets, test_size=0.9)
+    training_data, validation_data, training_target, validation_target = ttsplit(data, targets, test_size=0.2)
 
     # Create neural network
     # TODO L3.E2.6 Tune the number and size of hidden layers
     NNmodel = Sequential()
-    NNmodel.add(Dense(units=n_neurons, activation='tanh', input_shape=(data.shape[-1],)))
+    NNmodel.add(Dense(units=n_neurons, activation='sigmoid', input_shape=(data.shape[-1],)))
     for i in range(2, n_hidden_layers):
-        NNmodel.add(Dense(units=n_neurons, activation='tanh'))
-    NNmodel.add(Dense(units=targets.shape[-1], activation='tanh'))
+        NNmodel.add(Dense(units=n_neurons, activation='sigmoid'))
+    NNmodel.add(Dense(units=3, activation='sigmoid'))
     print(NNmodel.summary())
 
     # Define training parameters
     # TODO L3.E2.6 Tune the training parameters
     # TODO L3.E2.1
-    NNmodel.compile(optimizer=Adam(), loss='binary_crossentropy', metrics=['accuracy'])
+    NNmodel.compile(optimizer=Adam(learning_rate=0.001), loss=losses.SparseCategoricalCrossentropy(), metrics=['accuracy'])
 
     # Perform training
     # TODO L3.E2.4
-    callback_list = [K.callbacks.EarlyStopping(patience=50, verbose=1, restore_best_weights=1), print_every_N_epochs(25)]
+    callback_list = [K.callbacks.EarlyStopping(patience=250, verbose=1, restore_best_weights=1), print_every_N_epochs(25)]
     # TODO L3.E2.6 Tune the maximum number of iterations and desired error
     # TODO L3.E2.2 L3.E2.3
-    NNmodel.fit(training_data, training_target, batch_size=len(data), verbose=1,
-              epochs=25000, shuffle=True, callbacks=callback_list, validation_data=(validation_data, validation_target))
+    NNmodel.fit(training_data, training_target, batch_size=len(data), verbose=1, epochs=25000, shuffle=True, callbacks=callback_list,
+                validation_data=(validation_data, validation_target))
 
     # Save trained model to disk
     NNmodel.save('3classes.h5')
@@ -313,7 +314,7 @@ def full_nn(n_hiddenlayers, n_neurons, train_data, train_classes, test1, title, 
         # predictions2 = predictions2.reshape(len(test2), 1)
         # calcul des points en erreur à l'échelle du système
         error_indexes = calc_erreur_classification(classes2, predictions2)
-        predictions2[error_indexes] = error_class
+        #predictions2[error_indexes] = error_class
         print(f'Taux de classification moyen sur l\'ensemble des classes, {title}: {100 * (1 - len(error_indexes) / len(classes2))}%')
     #  view_classification_results(train_data, test1, c1, c2, glob_title, title1, title2, extent, test2=None, c3=None, title3=None)
     an.view_classification_results(train_data, test1, train_classes, predictions, title, 'Données originales',
