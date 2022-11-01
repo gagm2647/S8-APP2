@@ -82,7 +82,7 @@ def extract_color_histogram(images, labels):
     color_list = [[], [], []]   # Coast, Forest, Street | RGB intensity bins
     n_bins = 256
     for idx, img in enumerate(images):
-        img = np.round(img * 256)
+        #img = np.round(img * 256)
         # Color bining
         color = np.zeros((3, n_bins))
         for i in range(n_bins):
@@ -118,11 +118,11 @@ def view_colors(color_list, n_bins, labels: np.array):
     
     for i, classe in enumerate(color_list):
         for j, img in enumerate(classe):
-            integral_r = np.sum(img[0, :] / np.max(img[0, :]))
-            integral_g = np.sum(img[1, :] / np.max(img[1, :]))
-            integral_b = np.sum(img[2, :] / np.max(img[2, :]))
+            integral_r = np.sum(img[0, :] / np.max(img[0, :])) if np.max(img[0, :]) > 0 else 0
+            integral_g = np.sum(img[1, :] / np.max(img[1, :])) if np.max(img[1, :]) > 0 else 0
+            integral_b = np.sum(img[2, :] / np.max(img[2, :])) if np.max(img[2, :]) > 0 else 0
             integrals[i][j] = np.array([integral_r, integral_g, integral_b])
-
+        print('pouet')
 
     print('pouet')
 
@@ -173,9 +173,10 @@ def view_colors(color_list, n_bins, labels: np.array):
     integrals_stats = np.zeros((3, 3, 2))
     for idx, classe in enumerate(integrals):
         for c_channel in range(3):
-            mean = np.mean(classe[:, c_channel])
-            std  = np.std(classe[:, c_channel])
-            integrals_stats[idx, c_channel] = np.array(mean, std)
+            data = classe[:, c_channel]
+            mean = np.mean(data)
+            std  = np.std(data)
+            integrals_stats[idx, c_channel] = np.array([mean, std])
 
     coasts_integrals_mean = integrals_stats[0, :, 0]
     coasts_integrals_std = integrals_stats[0, :, 1]
@@ -370,8 +371,6 @@ def denormalize_image(img, mu, sigma):
 #  This function normalizes the color intensities by dividing each color
 #  value by the sum of all color values. In the case of an RGB image
 #  R = R/(R+G+B), G = G/(R+G+B), B = B/(R+G+B)
-
-
 def normalize_intensity(img: np.array):
     img = copy.deepcopy(img)
     for i in range(img.shape[0]):
@@ -936,6 +935,7 @@ def colors_std(image):
 def main(images: np.array, labels: np.array):
     features = []
     # features
+
     if True:
         means = np.zeros((len(images),6))
         for idx, img in enumerate(images):
@@ -970,7 +970,8 @@ def main(images: np.array, labels: np.array):
             images, labels, sigma=1, display=True)
         features.append(canny)
     if False:
-        color_hist = extract_color_histogram(images, labels)
+        x = rag_merging(images)
+        color_hist = extract_color_histogram(x, labels)
         features.append(color_hist)
     if False:
         simple_stats = extract_simple_stats(images, labels)
