@@ -250,6 +250,22 @@ def main():
     donneesTest = an.genDonneesTest(ndonnees, an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), ndim=features.shape[1])
 
     if False:
+        # 3 classes par graphiques et ellipse entre 2 dimensions.
+        xdim, ydim = 9, 5
+        xmin, xmax = np.min(features[:, xdim]), np.max(features[:, xdim])
+        ymin, ymax = np.min(features[:, 5]), np.max(features[:, 5])
+        xrange, yrange = xmax - xmin, ymax - ymin
+        c = np.vstack(((coasts_features[:, 9] - xmin) / xrange, (coasts_features[:, 5] - ymin) / yrange)).T
+        f = np.vstack(((forests_features[:, 9] - xmin) / xrange, (forests_features[:, 5] - ymin) / yrange)).T
+        s = np.vstack(((streets_features[:, 9] - xmin) / xrange, (streets_features[:, 5] - ymin) / yrange)).T
+        allClasses = [c, f, s]
+        an.view_classes(allClasses, an.Extent(xmin=0, xmax=1, ymin=0, ymax=1))
+
+        plt.show()
+
+        print('pouet')
+
+    if True:
         x = [coasts_features, forests_features, streets_features] #/ np.max(features)
         
         # TODO Classifier Bayesien
@@ -270,7 +286,7 @@ def main():
         plt.ylabel("Truth")
         plt.savefig('confusion_bayes.png', dpi=300, bbox_inches='tight')
 
-    if False:
+    if True:
         ndonnees = 15000
         coasts_features = coasts_features / np.max(coasts_features, axis=0)
         forests_features = forests_features / np.max(forests_features, axis=0)

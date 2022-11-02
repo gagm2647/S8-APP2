@@ -127,6 +127,7 @@ def viewEllipse(data, ax, scale=1, facecolor='none', edgecolor='red', **kwargs):
                       edgecolor=edgecolor, linewidth=2, **kwargs)
     return ax.add_patch(ellipse)
 
+
 def view_classes(data, extent, border_coeffs=None):
     """
     Affichage des classes dans data
@@ -141,17 +142,19 @@ def view_classes(data, extent, border_coeffs=None):
     dims = np.asarray(data).shape
 
     fig1, ax1 = plt.subplots(1, 1)
-    ax1.set_title(r'Visualisation des classes, des ellipses à distance 1$\sigma$' + ('et des frontières' if border_coeffs is not None else ''))
+    ax1.set_title(
+        r'Visualisation des classes, des ellipses à distance 1$\sigma$' + "\nentre l'intégrale du canal vert 32x32 normalisé compréhensivement\net l'entropie des hautes fréquences")
 
     #  TODO: rendre général, seulement 3 classes pour l'instant
-    colorpoints = ['orange', 'purple', 'black']
+    colorpoints = ['red', 'green', 'blue']
     colorfeatures = ['red', 'green', 'blue']
+    pisse = ['coasts', 'forests', 'streets']
 
     for i in range(dims[0]):
         tempdata = data[i]
         m, cov, valpr, vectprop = calcModeleGaussien(tempdata)
         ax1.scatter(tempdata[:, 0], tempdata[:, 1], s=5, c=colorpoints[i])
-        ax1.scatter(m[0], m[1], c=colorfeatures[i])
+        ax1.scatter(m[0], m[1], c=colorfeatures[i], label=pisse[i])
         viewEllipse(tempdata, ax1, edgecolor=colorfeatures[i])
 
     # Ajout des frontières
@@ -167,7 +170,9 @@ def view_classes(data, extent, border_coeffs=None):
 
     ax1.set_xlim([extent.xmin, extent.xmax])
     ax1.set_ylim([extent.ymin, extent.ymax])
-
+    ax1.set_xlabel('Intégrale du canal vert 32x32 normalisé.e')
+    ax1.set_ylabel('Entropie de haute fréquence normalisée')
+    ax1.legend()
     ax1.axes.set_aspect('equal')
 
 
