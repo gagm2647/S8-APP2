@@ -276,6 +276,7 @@ def main():
         forests_features = forests_features / np.max(forests_features, axis=0)
         streets_features = streets_features / np.max(streets_features, axis=0)
         features = features  / np.max(features, axis=0)
+        
         min, max = np.min(features), np.max(features)
         donneesTest = an.genDonneesTest(ndonnees, an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), ndim=features.shape[1])
 
@@ -283,8 +284,8 @@ def main():
 
         # x-mean sur chacune des classes
         # suivi d'un y-PPV avec ces nouveaux représentants de classes
-        cluster_centers, cluster_labels = classifiers.full_kmean(25, data, labels, 'kmean', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max))
-        test_data_pred = classifiers.full_ppv(25, cluster_centers, cluster_labels, donneesTest, '5v5', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
+        cluster_centers, cluster_labels = classifiers.full_kmean(150, data, labels, 'kmean', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max))
+        test_data_pred = classifiers.full_ppv(1, cluster_centers, cluster_labels, donneesTest, '5v5', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
 
         # Get the confusion matrix
         cf_matrix = confusion_matrix(labels, test_data_pred)
