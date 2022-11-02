@@ -20,6 +20,8 @@ import analysis as an
 import pandas as pd
 import seaborn as sns
 
+from sklearn.metrics import confusion_matrix
+
 
 def start_main():
     # Génère une liste de N images, les visualise et affiche leur histo de couleur
@@ -254,8 +256,19 @@ def main():
         # classification
         # Bayes
         #                           (train_data, train_classes, donnee_test, title, extent, test_data, test_classes)
-        classifiers.full_Bayes_risk(x, labels, donneesTest,
+        test_data_pred = classifiers.full_Bayes_risk(x, labels, donneesTest,
                                     'Bayes risque #1', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
+        # Get the confusion matrix
+        cf_matrix = confusion_matrix(labels, test_data_pred)
+        dataframe = pd.DataFrame(cf_matrix, columns=['Coast', 'Forest', 'Street'])
+
+        plt.figure()
+        plt.figure(figsize=(6, 6))
+        heatmap = sns.heatmap(dataframe, annot=True, yticklabels=['Coast', 'Forest', 'Street'])
+        heatmap.set_title('Confusion matrix of Bayes classifier', fontdict={'fontsize': 12}, pad=12);
+        plt.xlabel("Prediction")
+        plt.ylabel("Truth")
+        plt.savefig('confusion_bayes.png', dpi=300, bbox_inches='tight')
 
     if True:
         ndonnees = 15000
@@ -271,9 +284,21 @@ def main():
         # x-mean sur chacune des classes
         # suivi d'un y-PPV avec ces nouveaux représentants de classes
         cluster_centers, cluster_labels = classifiers.full_kmean(25, data, labels, 'kmean', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max))
-        classifiers.full_ppv(25, cluster_centers, cluster_labels, donneesTest, '5v5', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
+        test_data_pred = classifiers.full_ppv(25, cluster_centers, cluster_labels, donneesTest, '5v5', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
 
-    if True:
+        # Get the confusion matrix
+        cf_matrix = confusion_matrix(labels, test_data_pred)
+        dataframe = pd.DataFrame(cf_matrix, columns=['Coast', 'Forest', 'Street'])
+
+        plt.figure()
+        plt.figure(figsize=(6, 6))
+        heatmap = sns.heatmap(dataframe, annot=True, yticklabels=['Coast', 'Forest', 'Street'])
+        heatmap.set_title('Confusion matrix of k-ppv classifier', fontdict={'fontsize': 12}, pad=12);
+        plt.xlabel("Prediction")
+        plt.ylabel("Truth")
+        plt.savefig('confusion_ppv.png', dpi=300, bbox_inches='tight')
+
+    if False:
         features = np.zeros((len(coasts_features)+len(forests_features)+len(streets_features),features.shape[1]))
         i = 0
         for c in coasts_features:
@@ -292,8 +317,21 @@ def main():
         # TODO Classifier NN
         n_hidden_layers = 5
         n_neurons = 19
-        classifiers.full_nn(n_hidden_layers, n_neurons, features, labels, donneesTest,
+        test_data_pred = classifiers.full_nn(n_hidden_layers, n_neurons, features, labels, donneesTest,
                 f'NN {n_hidden_layers} layer(s) caché(s), {n_neurons} neurones par couche', an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), features, labels)
+
+        # Get the confusion matrix
+        cf_matrix = confusion_matrix(labels, test_data_pred)
+        dataframe = pd.DataFrame(cf_matrix, columns=['Coast', 'Forest', 'Street'])
+
+        plt.figure()
+        plt.figure(figsize=(6, 6))
+        heatmap = sns.heatmap(dataframe, annot=True, yticklabels=['Coast', 'Forest', 'Street'])
+        heatmap.set_title('Confusion matrix of Neural Network', fontdict={'fontsize': 12}, pad=12);
+        plt.xlabel("Prediction")
+        plt.ylabel("Truth")
+        plt.savefig('confusion_nn.png', dpi=300, bbox_inches='tight')
+
     plt.show()
 
 

@@ -51,7 +51,7 @@ from keras.optimizers import Adam
 from keras.api._v2.keras import losses
 
 import analysis as an
-
+import copy
 
 def compute_prob_dens_gaussian(train_data, test_data1, test_data2):
     """
@@ -196,7 +196,7 @@ def nn_classify(n_hidden_layers, n_neurons, train_data, classes, test1, test2=No
     # TODO L3.E2.6 Tune the maximum number of iterations and desired error
     # TODO L3.E2.2 L3.E2.3
     batch=len(data)
-    NNmodel.fit(training_data, training_target, batch_size=64, verbose=1, epochs=25000, shuffle=True, callbacks=callback_list,
+    NNmodel.fit(training_data, training_target, batch_size=batch, verbose=1, epochs=25000, shuffle=True, callbacks=callback_list,
                 validation_data=(validation_data, validation_target))
 
     # Save trained model to disk
@@ -236,13 +236,12 @@ def full_Bayes_risk(train_data, train_classes, donnee_test, title, extent, test_
     # donc minimiser le risque revient à maximiser p(x|Ci)
     classified = np.argmax(prob_dens, axis=1).reshape(len(donnee_test), 1)
     classified2 = np.argmax(prob_dens2, axis=1).reshape(test_classes.shape)
-
+    test_data_classified = np.argmax(prob_dens2, axis=1).reshape(test_classes.shape)
     # calcule le taux de classification moyen
     error_class = 6  # optionnel, assignation d'une classe différente à toutes les données en erreur, aide pour la visualisation
     error_indexes = calc_erreur_classification(test_classes, classified2)
     classified2[error_indexes] = error_class
-    print(
-        f'Taux de classification moyen sur l\'ensemble des classes, {title}: {100 * (1 - len(error_indexes) / len(classified2))}%')
+    print(f'Taux de classification moyen sur l\'ensemble des classes, {title}: {100 * (1 - len(error_indexes) / len(classified2))}%')
 
     train_data = np.array(train_data)
     x, y, z = train_data.shape
@@ -251,6 +250,7 @@ def full_Bayes_risk(train_data, train_classes, donnee_test, title, extent, test_
     an.view_classification_results(train_data, donnee_test, train_classes, classified / error_class / .75,
                                    f'Classification de Bayes, {title}', 'Données originales', 'Données aléatoires',
                                    extent, test_data, classified2 / error_class / .75, 'Données d\'origine reclassées')
+    return test_data_classified
 
 
 def full_ppv(n_neighbors, train_data, train_classes, datatest1, title, extent, datatest2=None, classestest2=None):
@@ -264,8 +264,10 @@ def full_ppv(n_neighbors, train_data, train_classes, datatest1, title, extent, d
     predictions, predictions2 = ppv_classify(n_neighbors, train_data, train_classes.ravel(), datatest1, datatest2)
     predictions = predictions.reshape(len(datatest1), 1)
 
-    error_class = 1  # optionnel, assignation d'une classe différente à toutes les données en erreur, aide pour la visualisation
+    error_class = 4  # optionnel, assignation d'une classe différente à toutes les données en erreur, aide pour la visualisation
     if np.asarray(datatest2).any():
+        test_data_pred = copy.deepcopy(predictions2)
+        test_data_pred.reshape(len(datatest2), 1)
         predictions2 = predictions2.reshape(len(datatest2), 1)
         # calcul des points en erreur à l'échelle du système
 
@@ -278,6 +280,7 @@ def full_ppv(n_neighbors, train_data, train_classes, datatest1, title, extent, d
                                    f'Données aléatoires classées {n_neighbors}-PPV',
                                    extent, datatest2, predictions2 / error_class / 0.75,
                                    f'Prédiction de {n_neighbors}-PPV, données originales')
+    return test_data_pred
 
 
 def full_kmean(n_clusters, train_data, train_classes, title, extent):
@@ -307,8 +310,10 @@ def full_nn(n_hiddenlayers, n_neurons, train_data, train_classes, test1, title, 
     Calcule le taux d'erreur moyen pour test2 le cas échéant
     Produit un graphique des résultats pour test1 et test2 le cas échéant
     """
-    predictions, predictions2 = nn_classify(n_hiddenlayers, n_neurons, train_data, train_classes.ravel(), test1, test2)
+    predictions, predictions2 = nn_classify(n_hiddenlayers, n_neurons,
+                                            train_data, train_classes.ravel(), test1, test2)
     predictions = predictions.reshape(len(test1), 1)
+    test_data_pred = copy.deepcopy(predictions2)
 
     error_class = 6  # optionnel, assignation d'une classe différente à toutes les données en erreur, aide pour la visualisation
     if np.asarray(test2).any():
@@ -322,6 +327,7 @@ def full_nn(n_hiddenlayers, n_neurons, train_data, train_classes, test1, title, 
                                    f'Données aléatoires classées par le RNA',
                                    extent, test2, predictions2 / error_class / 0.75,
                                    f'Prédiction du RNA, données originales')
+    return test_data_pred
 
 
 def calc_erreur_classification(original_data, classified_data):
