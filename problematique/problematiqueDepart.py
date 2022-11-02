@@ -249,7 +249,7 @@ def main():
     min, max = np.min(features), np.max(features)
     donneesTest = an.genDonneesTest(ndonnees, an.Extent(xmin=min, xmax=max, ymin=min, ymax=max), ndim=features.shape[1])
 
-    if True:
+    if False:
         x = [coasts_features, forests_features, streets_features] #/ np.max(features)
         
         # TODO Classifier Bayesien
@@ -270,7 +270,7 @@ def main():
         plt.ylabel("Truth")
         plt.savefig('confusion_bayes.png', dpi=300, bbox_inches='tight')
 
-    if True:
+    if False:
         ndonnees = 15000
         coasts_features = coasts_features / np.max(coasts_features, axis=0)
         forests_features = forests_features / np.max(forests_features, axis=0)
@@ -299,7 +299,7 @@ def main():
         plt.ylabel("Truth")
         plt.savefig('confusion_ppv.png', dpi=300, bbox_inches='tight')
 
-    if False:
+    if True:
         features = np.zeros((len(coasts_features)+len(forests_features)+len(streets_features),features.shape[1]))
         i = 0
         for c in coasts_features:

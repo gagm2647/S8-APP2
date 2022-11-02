@@ -929,6 +929,17 @@ def colors_std(image):
     return np.array([(nb_green - nb_blue), (nb_green - nb_red), (nb_blue - nb_red), (nb_blue + nb_green + nb_red)])
     #return np.array([nb_blue, nb_green, nb_red])
 
+def green_integral(img):
+    n_bins = 256
+    green = np.zeros((n_bins, 1))
+    img = np.round(img * 256)
+    for i in range(n_bins):
+        green[i] = np.count_nonzero(img[:, :, 1] == i)
+    min, max = np.min(green), np.max(green)
+    range_g = max - min
+    r = np.sum((green - min) / range_g) if range_g > 0 else 0
+    return r
+
 #######################################
 #   Main
 #######################################
@@ -958,7 +969,7 @@ def main(images: np.array, labels: np.array):
             means[idx, 4] = np.mean(blur[:, :, 2])
             
         features.append(means)
-        feature_names.extend(['Median of red', 'Median of green', 'Median of blue', 'Mean blur of green', 'Mean blur of blue'])
+        feature_names.extend(['Median of R', 'Median of G', 'Median of B', 'Mean blur of G', 'Mean blur of B'])
     if False:
         x = rag_merging(images)
         canny = extract_high_freq_entropy(
@@ -1006,6 +1017,7 @@ def main(images: np.array, labels: np.array):
 
         colors_diff = np.zeros((len(images), 3))
         z = np.zeros((len(images), 1))
+        g = np.zeros((len(images), 1))
         for idx, img in enumerate(images):
             img = comprehensive_color_normalize(img, False)
             color_d = colors_std(img)
@@ -1013,17 +1025,21 @@ def main(images: np.array, labels: np.array):
             colors_diff[idx, 1] = color_d[1]
             colors_diff[idx, 2] = color_d[2]
             z[idx] = np.sum(np.abs(colors_diff[idx, :]))
+            g[idx] = green_integral(img)
 
         colors_diff = np.abs(colors_diff)
 
         temp = np.append(features[0], colors_diff, axis=1)
         features = [temp]
-        feature_names.extend(['Color diff. G vs B', 'Color diff. G vs R', 'Color diff. B vs R'])
-        if False:
+        temp = np.append(features[0], g, axis=1)
+        features = [temp]
+        feature_names.extend(['Color diff. G vs B', 'Color diff. G vs R', 'Color diff. B vs R', 'Integral of G comp norm'])
+
+        if True:
             fig, (ax1, ax2, ax3) = plt.subplots(3, 1)
-            coasts_ffts = z[np.where(labels == 0)]
-            forests_ffts = z[np.where(labels == 1)]
-            streets_ffts = z[np.where(labels == 2)]
+            coasts_ffts = g[np.where(labels == 0)]
+            forests_ffts = g[np.where(labels == 1)]
+            streets_ffts = g[np.where(labels == 2)]
 
             ax1.plot(coasts_ffts, label='Coasts')
             ax2.plot(forests_ffts, label='Forests')
